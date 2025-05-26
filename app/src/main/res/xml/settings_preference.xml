@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory android:title="@string/category_settings_network">
+        <rikka.material.preference.MaterialSwitchPreference
+            app:defaultValue="false"
+            app:key="doh"
+            app:enabled="false"
+            app:icon="@drawable/settings_network_doh"
+            app:summary="@string/summary_settings_doh"
+            app:title="@string/label_settings_doh" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/category_settings_ui">
+        <rikka.preference.SimpleMenuPreference
+            app:defaultValue="SYSTEM"
+            app:entries="@array/language_entries"
+            app:entryValues="@array/language_entries_values"
+            app:icon="@drawable/settings_language"
+            app:key="language"
+            app:summary="%s"
+            app:title="@string/label_settings_language"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/category_settings_theme">
+        <rikka.material.preference.MaterialSwitchPreference
+            app:defaultValue="false"
+            app:key="dynamicColors"
+            app:icon="@drawable/settings_dynamic_colors"
+            app:summary="@string/summary_settings_theme_dynamic_colors"
+            app:title="@string/label_settings_theme_dynamic_colors" />
+
+        <rikka.preference.SimpleMenuPreference
+            app:defaultValue="AppTheme.Blue"
+            app:entries="@array/theme_color_entries"
+            app:entryValues="@array/theme_color_values"
+            app:icon="@drawable/settings_custom_colors"
+            app:key="customColors"
+            app:summary="%s"
+            app:title="@string/label_settings_theme_theme_color"
+            app:useSimpleSummaryProvider="true" />
+
+        <rikka.preference.SimpleMenuPreference
+            app:defaultValue="SYSTEM"
+            app:entries="@array/theme_darkmode_entries"
+            app:entryValues="@array/theme_darkmode_values"
+            app:icon="@drawable/settings_theme_darkmode"
+            app:key="theme_darkmode"
+            app:summary="%s"
+            app:title="@string/label_settings_theme_darkmode"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/category_settings_manager">
+        <Preference
+            app:icon="@drawable/settings_lxc_dir"
+            android:defaultValue="/data/share"
+            app:key="lxc_dir"
+            app:title="@string/label_settings_lxc_dir" />
+
+        <rikka.preference.SimpleMenuPreference
+            app:defaultValue="debug"
+            app:entries="@array/log_level_entries"
+            app:entryValues="@array/log_level_values"
+            app:icon="@drawable/settings_log_level"
+            app:key="log_level"
+            app:summary="%s"
+            app:title="@string/label_settings_log_level"
+            app:useSimpleSummaryProvider="true" />
+
+        <rikka.preference.SimpleMenuPreference
+            app:defaultValue="7"
+            app:entries="@array/log_retention_entries"
+            app:entryValues="@array/log_retention_values"
+            app:icon="@drawable/settings_log_clear"
+            app:key="log_clear"
+            app:summary="%s"
+            app:title="@string/label_settings_log_clear"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+</androidx.preference.PreferenceScreen>

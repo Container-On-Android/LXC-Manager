@@ -1,0 +1,54 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+  <!-- 背景矩形，带圆角 -->
+  <path
+      android:pathData="M0,8c0,-4 3,-8 8,-8h32c4,0 8,3 8,8v32c0,4 -3,8 -8,8h-32c-4,0 -8,-3 -8,-8z"
+      android:fillColor="@color/md_theme_primaryContainer"/>
+
+  <!-- 大圆 -->
+  <path
+      android:pathData="M24,24m-18,0a18,18 0,1 1,36 0a18,18 0,1 1,-36 0"
+      android:strokeWidth="4"
+      android:fillColor="@color/md_theme_primaryContainer"
+      android:strokeColor="@color/md_theme_primary"/>
+
+  <!-- 1/3小圆 -->
+  <path
+      android:strokeWidth="1"
+      android:pathData="M33,39.588m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0"
+      android:fillColor="@color/md_theme_primaryContainer"
+      android:strokeColor="@android:color/transparent"/>
+  <path
+      android:strokeWidth="1"
+      android:pathData="M33,39.588m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"
+      android:fillColor="@color/md_theme_primary"
+      android:strokeColor="@color/md_theme_primaryContainer"/>
+
+  <!-- 2/3小圆 -->
+  <path
+      android:strokeWidth="1"
+      android:pathData="M33,8.412m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0"
+      android:fillColor="@color/md_theme_primaryContainer"
+      android:strokeColor="@android:color/transparent"/>
+  <path
+      android:strokeWidth="1"
+      android:pathData="M33,8.412m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"
+      android:fillColor="@color/md_theme_primary"
+      android:strokeColor="@color/md_theme_primaryContainer"/>
+
+  <!-- 3/3小圆 -->
+  <path
+      android:strokeWidth="1"
+      android:pathData="M6,24m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0"
+      android:fillColor="@color/md_theme_primaryContainer"
+      android:strokeColor="@android:color/transparent"/>
+  <path
+      android:strokeWidth="1"
+      android:pathData="M6,24m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"
+      android:fillColor="@color/md_theme_primary"
+      android:strokeColor="@color/md_theme_primaryContainer"/>
+</vector>

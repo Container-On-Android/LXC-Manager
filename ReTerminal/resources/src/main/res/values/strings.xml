@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">Settings</string>
+    <string name="use_shizuku">Auto Login to shizuku</string>
+    <string name="use_shizuku_desc">Automatically execute rish command</string>
+</resources>

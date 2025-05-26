@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="language_entries">
+        <item>SYSTEM</item>
+        <item>English</item>
+        <item>简体中文</item>
+    </string-array>
+
+    <string-array name="language_entries_values">
+        <item>SYSTEM</item>
+        <item>en-us</item>
+        <item>zh-cn</item>
+    </string-array>
+
+    <string-array name="log_level_entries">
+        <item>WARN</item>
+        <item>ERROR</item>
+        <item>NOTICE</item>
+        <item>INFO</item>
+        <item>DEBUG</item>
+        <item>TRACE</item>
+        <item>FATAL</item>
+        <item>ALERT</item>
+        <item>CRIT</item>
+    </string-array>
+
+    <string-array name="log_level_values">
+        <item>warn</item>
+        <item>error</item>
+        <item>notice</item>
+        <item>info</item>
+        <item>debug</item>
+        <item>trace</item>
+        <item>fatal</item>
+        <item>alert</item>
+        <item>crit</item>
+    </string-array>
+
+    <string-array name="log_retention_entries" >
+        <item>3 Days</item>
+        <item>7 Days</item>
+        <item>15 Days</item>
+        <item>1 month</item>
+    </string-array>
+
+    <string-array name="log_retention_values" >
+        <item>3</item>
+        <item>7</item>
+        <item>15</item>
+        <item>30</item>
+    </string-array>
+
+    <string-array name="theme_color_entries" >
+        <item>Blue</item>
+        <item>Green</item>
+        <item>Yellow</item>
+        <item>Red</item>
+    </string-array>
+
+    <string-array name="theme_color_values" >
+        <item>AppTheme.Blue</item>
+        <item>AppTheme.Green</item>
+        <item>AppTheme.Yellow</item>
+        <item>AppTheme.Red</item>
+    </string-array>
+
+    <string-array name="theme_darkmode_entries" >
+        <item>SYSTEM</item>
+        <item>ALWAYS</item>
+        <item>NEVER</item>
+    </string-array>
+
+    <string-array name="theme_darkmode_values" >
+        <item>SYSTEM</item>
+        <item>ALWAYS</item>
+        <item>NEVER</item>
+    </string-array>
+</resources>

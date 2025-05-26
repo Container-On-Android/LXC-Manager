@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <data>
+        <variable
+            name="item"
+            type="io.dreamconnected.coa.lxcmanager.ui.dashboard.Item" />
+    </data>
+
+    <LinearLayout
+        android:id="@+id/item_root"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <!-- 顶部标题 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/item_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@{item.name}"
+            style="@style/TextAppearance.Material3.TitleMedium"
+            android:textSize="18sp"
+            android:layout_gravity="start" />
+
+        <GridLayout
+            android:id="@+id/item_grid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:columnCount="2"
+            android:rowCount="6"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_1"
+                style="@style/TextAppearance.Material3.TitleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:gravity="start"
+                android:text="STATUS"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_2"
+                style="@style/TextAppearance.Material3.TitleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:gravity="start"
+                android:text="IPV4"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_3"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:gravity="start"
+                android:text="@{item.state}"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/item_ipv4_content"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:ellipsize="marquee"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="start"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:scrollHorizontally="true"
+                android:singleLine="true"
+                android:text="@{item.ipv4}"
+                tools:ignore="SpeakableTextPresentCheck" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_5"
+                style="@style/TextAppearance.Material3.TitleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:gravity="start"
+                android:text="AUTOSTART"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_6"
+                style="@style/TextAppearance.Material3.TitleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:gravity="start"
+                android:text="IPV6"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_7"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:gravity="start"
+                android:text="@{item.autostart}"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/item_ipv6_content"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:ellipsize="marquee"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="start"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:scrollHorizontally="true"
+                android:singleLine="true"
+                android:text="@{item.ipv6}"
+                tools:ignore="SpeakableTextPresentCheck" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_9"
+                style="@style/TextAppearance.Material3.TitleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:gravity="start"
+                android:text="GROUPS"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_10"
+                style="@style/TextAppearance.Material3.TitleSmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:gravity="start"
+                android:text="UNPRIVILEGED"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_11"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:gravity="start"
+                android:text="@{item.groups}"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_12"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:gravity="start" android:text="@{item.unprivileged}"/>
+
+        </GridLayout>
+    </LinearLayout>
+
+</layout>

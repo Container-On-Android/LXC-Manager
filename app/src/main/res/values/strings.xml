@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_repos">Repo</string>
+    <string name="title_settings">Settings</string>
+    <string name="app_name">LXC Manager</string>
+
+    <string name="action_home_about">About</string>
+
+    <!-- Home Fragment -->
+    <string name="card_home_lxc_ver">Lxc version</string>
+    <string name="card_home_lxc_build_info">Lxc build info</string>
+    <string name="card_home_device_model">Device model</string>
+    <string name="card_home_device_arch">Device architecture</string>
+    <string name="card_home_device_kernel">Device kernel</string>
+    <!-- About -->
+
+    <!-- SharedPreference -->
+    <string name="has_root">has_root</string>
+    <string name="has_shell">has_shell</string>
+    <string name="lxc_path">lxc_path</string>
+    <string name="lxc_ld_path">lxc_ld_path</string>
+    <string name="lxc_bin_path">lxc_bin_path</string>
+    <string name="lxc_path_default">/data/share</string>
+
+    <string name="card_home_manager_warning_title">Warning</string>
+    <string name="card_home_manager_warning_content">LXC not detected in your environment, maybe you need to define it manually or install it online.</string>
+    <string name="card_home_manager_warning_action">Install</string>
+
+    <string name="lxc_freeze">Freeze</string>
+    <string name="lxc_attach">Attach</string>
+    <string name="lxc_console">Console</string>
+    <string name="lxc_copy">Copy</string>
+    <string name="lxc_snapshot">Snapshot</string>
+    <string name="lxc_destroy">Destroy</string>
+    <string name="lxc_start">Start</string>
+
+    <!-- Shared Settings -->
+    <string name="category_settings_network">Network</string>
+    <string name="label_settings_doh">DoH</string>
+    <string name="summary_settings_doh">DoH</string>
+    <string name="category_settings_ui">UI</string>
+    <string name="label_settings_language">Language</string>
+    <string name="category_settings_theme">Theme</string>
+    <string name="category_settings_manager">Manager</string>
+    <string name="label_settings_log_level">Log level</string>
+    <string name="label_settings_log_clear">Log retention time</string>
+    <string name="label_settings_lxc_dir">Customizing lxc directory</string>
+    <string name="label_settings_theme_dynamic_colors">Dynamic colors</string>
+    <string name="summary_settings_theme_dynamic_colors">Use the system\'s theme color</string>
+    <string name="label_settings_theme_darkmode">Dark mode</string>
+    <string name="label_settings_theme_theme_color">Theme color</string>
+    <string name="co_container_status_frozen">Frozen</string>
+    <string name="co_container_status_started">Started</string>
+    <string name="co_container_status_stopped">Stopped</string>
+    <string name="action_home_suggestions_feedback">Suggestions or feedback</string>
+    <string name="action_overview_export">Export</string>
+    <string name="card_home_device_cgroup">Cgroup check</string>
+
+</resources>

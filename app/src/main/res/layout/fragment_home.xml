@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:fitsSystemWindows="true"
+    tools:context=".ui.home.HomeFragment">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:id="@+id/appBarLayout">
+
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:layout_height="?collapsingToolbarLayoutLargeSize"
+            android:layout_width="match_parent"
+            app:contentScrim="?attr/colorSurfaceContainer"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
+            app:titleCollapseMode="scale"
+            android:id="@+id/collapsingToolbarLayout">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:layout_height="?actionBarSize"
+                android:layout_width="match_parent"
+                app:layout_collapseMode="pin"
+                android:id="@+id/toolbar" />
+
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <FrameLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:fitsSystemWindows="false">
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:animateLayoutChanges="true"
+                android:paddingVertical="?dialogPreferredPadding"
+                android:orientation="vertical"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingHorizontal="@dimen/activity_horizontal_margin">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:outlineSpotShadowColor="?colorPrimary"
+                    app:cardBackgroundColor="?colorPrimary"
+                    style="@style/Widget.Material3.CardView.Elevated"
+                    android:outlineAmbientShadowColor="?colorPrimary"
+                    app:cardPreventCornerOverlap="false">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="?dialogPreferredPadding">
+
+                        <ImageView
+                            android:id="@+id/lxd_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_lxd_logo_black_48dp"
+                            android:contentDescription="@string/app_name"
+                            android:layout_alignParentStart="true"
+                            android:layout_centerVertical="true"
+                            android:layout_marginEnd="16dp" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_toEndOf="@id/lxd_icon"
+                            android:layout_alignParentTop="true"
+                            android:orientation="vertical">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/manager_count"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Status"
+                                android:textSize="18sp"
+                                android:textColor="?colorOnPrimary"
+                                android:textAppearance="?textAppearanceBodyMedium" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/running_totle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Domain provider"
+                                android:textSize="16sp"
+                                android:textColor="?colorOnPrimary"
+                                android:textAppearance="?textAppearanceBodyMedium" />
+                        </LinearLayout>
+
+                    </RelativeLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:outlineSpotShadowColor="?colorPrimaryContainer"
+                    app:cardBackgroundColor="?colorPrimaryContainer"
+                    style="@style/Widget.Material3.CardView.Elevated"
+                    android:outlineAmbientShadowColor="?colorPrimaryContainer"
+                    app:cardPreventCornerOverlap="false"
+                    android:layout_marginTop="16dp">
+
+                    <LinearLayout
+                        android:layout_height="wrap_content"
+                        android:layout_width="match_parent"
+                        android:padding="?dialogPreferredPadding"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_height="wrap_content"
+                            android:layout_width="match_parent"
+                            android:id="@+id/card_home_manager_warning_title"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:text="@string/card_home_manager_warning_title" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_height="wrap_content"
+                            android:layout_width="match_parent"
+                            style="@style/StyleValueManagerInfo"
+                            android:id="@+id/card_home_manager_warning_content"
+                            android:text="@string/card_home_manager_warning_content" />
+
+                        <LinearLayout
+                            android:layout_height="wrap_content"
+                            android:layout_width="match_parent"
+                            android:orientation="horizontal"
+                            android:gravity="end">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/action_main_warring"
+                                android:layout_height="wrap_content"
+                                android:layout_width="wrap_content"
+                                android:text="@string/card_home_manager_warning_action" />
+
+                        </LinearLayout>
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_marginTop="16dp">
+
+                    <LinearLayout
+                        android:layout_height="wrap_content"
+                        android:layout_width="match_parent"
+                        android:padding="?dialogPreferredPadding"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_height="wrap_content"
+                            android:layout_width="match_parent"
+                            style="@style/StyleLabelManagerInfo"
+                            android:text="@string/card_home_lxc_ver" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_height="wrap_content"
+                            android:layout_width="match_parent"
+                            style="@style/StyleValueManagerInfo"
+                            android:id="@+id/lxc_ver"
+                            android:text="@string/card_home_lxc_ver" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_height="wrap_content"
+                            android:layout_width="match_parent"
+                            style="@style/StyleLabelManagerInfo"
+                            android:text="@string/card_home_lxc_build_info" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_height="wrap_content"
+                            android:layout_width="match_parent"
+                            style="@style/StyleValueManagerInfo"
+                            android:id="@+id/lxc_build_info"
+                            android:text="@string/card_home_lxc_build_info" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_height="wrap_content"
+                            android:layout_width="match_parent"
+                            style="@style/StyleLabelManagerInfo"
+                            android:text="@string/card_home_device_cgroup" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_height="wrap_content"
+                            android:layout_width="match_parent"
+                            style="@style/StyleValueManagerInfo"
+                            android:id="@+id/device_cgroup"
+                            android:text="@string/card_home_device_cgroup" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+        </androidx.core.widget.NestedScrollView>
+
+    </FrameLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
