@@ -193,4 +193,14 @@ class ScreenMask(private val context: Context) {
             }
             .show()
     }
+
+    fun showDebugDialog(context: Context, title: String, message: String, onConfirm: () -> Unit) {
+        MaterialAlertDialogBuilder(context)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("OK") { _, _ ->
+                onConfirm()
+            }
+            .show()
+    }
 }

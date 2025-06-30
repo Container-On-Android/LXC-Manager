@@ -11,6 +11,7 @@ import java.io.OutputStream
 import java.util.concurrent.Executors
 import io.dreamconnected.coa.lxcmanager.R
 import java.util.concurrent.ExecutorService
+import kotlin.system.exitProcess
 
 class ShellClient private constructor() {
     private var process: Process? = null
@@ -19,19 +20,42 @@ class ShellClient private constructor() {
 
     @Throws(IOException::class)
     fun invokeShell(context:Context) {
-        val processBuilder = ProcessBuilder("su", "-m")
-        processBuilder.redirectErrorStream(true)
-        val sharedPref = context.getSharedPreferences("MainActivity", Context.MODE_PRIVATE) ?: return
-        val defaultLxcPath = context.resources.getString(R.string.lxc_path_default)
-        val lxcPath = sharedPref.getString(context.getString(R.string.lxc_path), defaultLxcPath)
-        val lxcLdPath = sharedPref.getString(context.getString(R.string.lxc_ld_path), defaultLxcPath)
-        val lxcBinPath = sharedPref.getString(context.getString(R.string.lxc_bin_path), defaultLxcPath)
-        processBuilder.environment().put("HOME", lxcPath)
-        processBuilder.environment().put("PATH", "$lxcBinPath" + System.getenv("PATH"))
-        processBuilder.environment().put("LD_LIBRARY_PATH", lxcLdPath)
-        process = processBuilder.start()
-        outputStream = process!!.outputStream
-        inputReader = BufferedReader(InputStreamReader(process!!.inputStream))
+        try {
+            val processBuilderCheck = ProcessBuilder("which", "su")
+            val checkProcess = processBuilderCheck.start()
+            val reader = BufferedReader(InputStreamReader(checkProcess.inputStream))
+            val suPath = reader.readLine()
+            val screenMask = ScreenMask(context)
+
+            if (suPath.isNullOrEmpty()) {
+                Log.e("RootCheck", "su command not found")
+                screenMask.showDebugDialog(
+                    context,
+                    context.resources.getString(R.string.root_grant_req),
+                    context.resources.getString(R.string.root_grant_err_no_su),
+                    onConfirm = {
+                        exitProcess(0)
+                    })
+                return
+            }
+
+            val processBuilder = ProcessBuilder("su", "-m")
+            processBuilder.redirectErrorStream(true)
+            val sharedPref = context.getSharedPreferences("MainActivity", Context.MODE_PRIVATE) ?: return
+            val defaultLxcPath = context.resources.getString(R.string.lxc_path_default)
+            val lxcPath = sharedPref.getString(context.getString(R.string.lxc_path), defaultLxcPath)
+            val lxcLdPath = sharedPref.getString(context.getString(R.string.lxc_ld_path), defaultLxcPath)
+            val lxcBinPath = sharedPref.getString(context.getString(R.string.lxc_bin_path), defaultLxcPath)
+            processBuilder.environment()["HOME"] = lxcPath
+            processBuilder.environment()["PATH"] = "$lxcBinPath" + System.getenv("PATH")
+            processBuilder.environment()["LD_LIBRARY_PATH"] = lxcLdPath
+            process = processBuilder.start()
+            outputStream = process?.outputStream
+            inputReader = BufferedReader(InputStreamReader(process?.inputStream))
+        } catch (e: IOException) {
+            e.printStackTrace()
+            Log.e("ShellError", "Error invoking shell process")
+        }
     }
 
     interface CommandOutputListener {
@@ -70,7 +94,7 @@ class ShellClient private constructor() {
                             } else {
                                 outputBuilder.append(line).append("\n")
                                 listener?.let {
-                                    val finalLine: String? = line
+                                    val finalLine: String = line
                                     Handler(Looper.getMainLooper()).post {
                                         it.onOutput(finalLine)
                                     }
