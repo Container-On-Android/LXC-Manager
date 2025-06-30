@@ -227,8 +227,8 @@ class ContainerOverviewFragment : BaseFragment(), MenuProvider {
         val dataCPU = floatArrayOf(0f, 0f, 0f, 0f, 0f)
         val dataMem = floatArrayOf(0f, 0f, 0f, 0f, 0f)
 
-        LxcNetworkChartManager.setLineName1("CPU")
-        LxcNetworkChartManager.setLineName2("Mem")
+        LxcNetworkChartManager.setLineName1("Mem")
+        LxcNetworkChartManager.setLineName2("CPU")
         LxcNetworkChartManager.initData(numX, dataCPU, dataMem)
 
         val lineData = LxcNetworkChartManager.initDoubleLineChart(lineChart2)
