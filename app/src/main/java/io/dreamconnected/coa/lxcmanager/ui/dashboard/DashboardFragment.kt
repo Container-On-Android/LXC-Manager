@@ -20,6 +20,7 @@ class DashboardFragment : BaseFragment(),OnItemClickListener {
 
     private var _binding: FragmentDashboardBinding? = null
     private lateinit var adapter: ItemAdapter
+    private lateinit var dashboardViewModel: DashboardViewModel
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -30,7 +31,7 @@ class DashboardFragment : BaseFragment(),OnItemClickListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val dashboardViewModel =
+        dashboardViewModel =
             ViewModelProvider(this)[DashboardViewModel::class.java]
 
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
@@ -39,11 +40,11 @@ class DashboardFragment : BaseFragment(),OnItemClickListener {
 
         val recyclerView: RecyclerView = binding.recyclerView
         recyclerView.layoutManager = LinearLayoutManager(context)
-        adapter = ItemAdapter(mutableListOf(),this)
+        adapter = ItemAdapter(this)
         recyclerView.adapter = adapter
 
         dashboardViewModel.items.observe(viewLifecycleOwner) { items ->
-            adapter.setItems(items)
+            adapter.submitList(items)
         }
         return root
     }
@@ -64,6 +65,13 @@ class DashboardFragment : BaseFragment(),OnItemClickListener {
                 LxcTemplates("busybox", listOf("busybox-path"))
             )
             ScreenMask(requireContext()).showTemplateSelectionDialog(requireContext(),templates)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::dashboardViewModel.isInitialized) {
+            dashboardViewModel.refreshContainers()
         }
     }
 

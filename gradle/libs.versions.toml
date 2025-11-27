@@ -68,6 +68,7 @@ ui = "1.8.1"
 wordWrap = "0.1.13"
 coreAnimation = "1.0.0"
 runtimeAndroid = "1.7.8"
+libsu = "5.2.2"
 
 [libraries]
 accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-systemuicontroller", version.ref = "accompanistSystemuicontroller" }
@@ -158,6 +159,7 @@ lifecycle-viewmodel-android = { group = "androidx.lifecycle", name = "lifecycle-
 word-wrap = { module = "com.github.davidmoten:word-wrap", version.ref = "wordWrap" }
 core-animation = { group = "androidx.core", name = "core-animation", version.ref = "coreAnimation" }
 runtime-android = { group = "androidx.compose.runtime", name = "runtime-android", version.ref = "runtimeAndroid" }
+libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

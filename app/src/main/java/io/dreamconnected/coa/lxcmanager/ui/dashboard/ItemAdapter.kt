@@ -1,12 +1,13 @@
 package io.dreamconnected.coa.lxcmanager.ui.dashboard
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.dreamconnected.coa.lxcmanager.databinding.ItemLayoutBinding
 
-class ItemAdapter(private val items: MutableList<Item>,private val listener: OnItemClickListener) : RecyclerView.Adapter<ItemAdapter.ItemViewHolder>() {
+class ItemAdapter(private val listener: OnItemClickListener) : ListAdapter<Item, ItemAdapter.ItemViewHolder>(ItemDiffCallback()) {
 
     class ItemViewHolder(val binding: ItemLayoutBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -19,28 +20,25 @@ class ItemAdapter(private val items: MutableList<Item>,private val listener: OnI
     }
 
     override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
-        holder.binding.item = items[position]
+        val item = getItem(position)
+        holder.binding.item = item
         holder.binding.executePendingBindings()
         holder.binding.root.setOnClickListener {
-            listener.onItemClick(items[position].name)
+            listener.onItemClick(item.name)
         }
-    }
-
-    override fun getItemCount() = items.size
-
-    fun addItem(item: Item) {
-        items.add(item)
-        notifyItemInserted(items.size - 1)
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    fun setItems(newItems: List<Item>) {
-        items.clear()
-        items.addAll(newItems)
-        notifyDataSetChanged()
     }
 
     interface OnItemClickListener {
         fun onItemClick(item: String)
+    }
+
+    private class ItemDiffCallback : DiffUtil.ItemCallback<Item>() {
+        override fun areItemsTheSame(oldItem: Item, newItem: Item): Boolean {
+            return oldItem.name == newItem.name
+        }
+
+        override fun areContentsTheSame(oldItem: Item, newItem: Item): Boolean {
+            return oldItem == newItem
+        }
     }
 }

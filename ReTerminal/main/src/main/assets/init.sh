@@ -39,7 +39,7 @@ elif [ "$1" = "2" ]; then
     fi
   done
 
-  env -i LD_LIBRARY_PATH=$LXC_LD_DIR PATH=$LXC_BIN_DIR HOME=$LXC_DIR su -m
+  env -i LD_LIBRARY_PATH=$LXC_LD_DIR PATH=$LXC_BIN_DIR HOME=$LXC_DIR su -p
 elif [ "$1" = "3" ]; then
     result=$(su -c "/system/bin/app_process -Djava.class.path=\"$PKG_PATH\" /system/bin com.rk.shell.Installer" "$2")
     su -c "

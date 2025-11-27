@@ -7,16 +7,21 @@ import com.rk.libcommons.child
 import java.io.File
 
 object Rootfs {
+    private const val SKIP_SETUP = true
     val reTerminal = File("/sdcard/Download/ReTerminal")
 
     init {
-        if (reTerminal.exists().not()){
+        if (!SKIP_SETUP && reTerminal.exists().not()){
             reTerminal.mkdirs()
         }
     }
 
     var isDownloaded = mutableStateOf(isFilesDownloaded())
     fun isFilesDownloaded(): Boolean{
-        return reTerminal.exists() && reTerminal.child("proot").exists() && reTerminal.child("libtalloc.so.2").exists() && reTerminal.child("alpine.tar.gz").exists()
+        return if (SKIP_SETUP) {
+            true
+        } else {
+            reTerminal.exists() && reTerminal.child("proot").exists() && reTerminal.child("libtalloc.so.2").exists() && reTerminal.child("alpine.tar.gz").exists()
+        }
     }
 }

@@ -4,25 +4,27 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import io.dreamconnected.coa.lxcmanager.util.ShellClient
+import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
+import java.util.concurrent.atomic.AtomicInteger
 
 class DashboardViewModel : ViewModel() {
 
-    private var shellClient = ShellClient.instance ?: throw IllegalStateException("ShellClient not initialized")
-
     private val _items = MutableLiveData<MutableList<Item>>(mutableListOf())
     val items: LiveData<MutableList<Item>> = _items
+    private val refreshCounter = AtomicInteger(0)
 
-    init {
-        shellClient.execCommand("lxc-ls -f | tail -n +2", 1, object : ShellClient.CommandOutputListener {
+    fun refreshContainers() {
+        val requestId = refreshCounter.incrementAndGet()
+        val tempItems = mutableListOf<Item>()
+        ShellCommandExecutor.execCommand("lxc-ls -f | tail -n +2", object : ShellCommandExecutor.CommandOutputListener {
             override fun onOutput(output: String?) {
+                if (requestId != refreshCounter.get()) return
                 output?.let {
                     val line = it.trim()
                     if (line.isNotEmpty()) {
                         try {
                             val item = parseContainerData(line)
-                            _items.value?.add(item)
-                            _items.postValue(_items.value)
+                            tempItems.add(item)
                         } catch (e: IllegalArgumentException) {
                             Log.e("DashboardViewModel", "Error parsing line: $line", e)
                         }
@@ -31,6 +33,8 @@ class DashboardViewModel : ViewModel() {
             }
 
             override fun onCommandComplete(code: String?) {
+                if (requestId != refreshCounter.get()) return
+                _items.postValue(tempItems.toMutableList())
             }
         })
     }

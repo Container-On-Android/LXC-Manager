@@ -18,7 +18,7 @@ su -c "exit" 2>/dev/null && : || { echo " [!] No su program was found on your de
     if [[ "$output" == *"Permission denied"* ]]; then
         echo "Detected existing directory: $dir"
         LXC_DIR="$dir"
-        LXC_LD_DIR="$dir/lib:$dir/lib64:/data/sysroot/lib:/data/sysroot/lib64:$LD_LIBRARY_PATH"
+        LXC_LD_DIR="/system/lib64:/system/lib:$dir/lib:$dir/lib64:/data/sysroot/lib:/data/sysroot/lib64:$LD_LIBRARY_PATH"
         LXC_BIN_DIR="$dir/bin:$dir/libexec/lxc:$PATH"
         break
     elif [[ "$output" == *"No such file or directory"* ]]; then
@@ -26,4 +26,4 @@ su -c "exit" 2>/dev/null && : || { echo " [!] No su program was found on your de
     fi
   done
 
-  env -i LD_LIBRARY_PATH=$LXC_LD_DIR PATH=$LXC_BIN_DIR HOME=$LXC_DIR LXC_CMD=$LXC_CMD LXC_ARG=$LXC_ARG su -m -c env $LXC_CMD $LXC_ARG
+  env -i LD_LIBRARY_PATH=$LXC_LD_DIR PATH=$LXC_BIN_DIR HOME=$LXC_DIR LXC_CMD=$LXC_CMD LXC_ARG=$LXC_ARG su -p -c env $LXC_CMD $LXC_ARG

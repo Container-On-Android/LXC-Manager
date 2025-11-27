@@ -27,7 +27,7 @@ import io.dreamconnected.coa.lxcmanager.databinding.FragmentContainerOverviewBin
 import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
 import io.dreamconnected.coa.lxcmanager.ui.dashboard.DashboardViewModel
 import io.dreamconnected.coa.lxcmanager.util.ScreenMask
-import io.dreamconnected.coa.lxcmanager.util.ShellClient
+import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
 
 class ContainerOverviewFragment : BaseFragment(), MenuProvider {
 
@@ -40,8 +40,7 @@ class ContainerOverviewFragment : BaseFragment(), MenuProvider {
     private lateinit var syncer: SyncContainerStatus
     private var isUserInitiatedChange = false
     private var isFreeze = false
-    private var shellClient = ShellClient.instance ?: throw IllegalStateException("ShellClient not initialized")
-
+    
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -68,30 +67,41 @@ class ContainerOverviewFragment : BaseFragment(), MenuProvider {
         val statusBar = view.findViewById<MaterialSwitch>(R.id.main_switch_bar)
         syncer = SyncContainerStatus(object : OnSyncListener {
             override fun onSync(status: String, cpu: Float, mem: Float) {
-                println("容器状态: $status, CPU: $cpu, 内存: $mem")
-                if (status == "FROZEN") {
-                    statusBar.isEnabled = false
-                    statusBar.text = getString(R.string.co_container_status_frozen)
-                } else { onNewData(cpu,mem,lineChart2) }
                 when (status) {
                     "RUNNING" -> {
-                        statusBar.isEnabled = true
-                        statusBar.isChecked = true
-                        statusBar.text = getString(R.string.co_container_status_started)
+                        if (!statusBar.isChecked || statusBar.text != getString(R.string.co_container_status_started)) {
+                            statusBar.isEnabled = true
+                            statusBar.isChecked = true
+                            statusBar.text = getString(R.string.co_container_status_started)
+                        }
                         isFreeze = false
                         syncer.resume()
+                        onNewData(cpu, mem, lineChart2)
                     }
                     "STOPPED" -> {
-                        statusBar.isEnabled = true
-                        statusBar.isChecked = false
-                        statusBar.text = getString(R.string.co_container_status_stopped)
+                        if (statusBar.isChecked || statusBar.text != getString(R.string.co_container_status_stopped)) {
+                            statusBar.isEnabled = true
+                            statusBar.isChecked = false
+                            statusBar.text = getString(R.string.co_container_status_stopped)
+                        }
                         isFreeze = false
                         syncer.pause()
                     }
+                    "FROZEN" -> {
+                        if (statusBar.isEnabled || statusBar.text != getString(R.string.co_container_status_frozen)) {
+                            statusBar.isEnabled = false
+                            statusBar.isChecked = false
+                            statusBar.text = getString(R.string.co_container_status_frozen)
+                        }
+                        isFreeze = true
+                        syncer.pause()
+                    }
                     else -> {
-                        statusBar.isChecked = false
-                        statusBar.isEnabled = false
-                        statusBar.text = getString(R.string.co_container_status_frozen)
+                        if (statusBar.isEnabled || statusBar.text != getString(R.string.co_container_status_frozen)) {
+                            statusBar.isChecked = false
+                            statusBar.isEnabled = false
+                            statusBar.text = getString(R.string.co_container_status_frozen)
+                        }
                         isFreeze = true
                         syncer.pause()
                     }
@@ -114,29 +124,19 @@ class ContainerOverviewFragment : BaseFragment(), MenuProvider {
             when (view.id) {
                 R.id.lxc_freeze -> {
                     screenMask.show()
-                    if (isFreeze) {
-                        shellClient.execCommand("lxc-unfreeze $containerName", 1, object : ShellClient.CommandOutputListener {
-                            override fun onOutput(output: String?) {
-                                output?.let {
-                                }
-                            }
-                            override fun onCommandComplete(code: String?) {
+                    val command = if (isFreeze) "lxc-unfreeze $containerName" else "lxc-freeze $containerName"
+                    ShellCommandExecutor.execCommand(command, object : ShellCommandExecutor.CommandOutputListener {
+                        override fun onOutput(output: String?) {}
+                        override fun onCommandComplete(code: String?) {
+                            if (isFreeze) {
                                 syncer.resume()
-                                screenMask.dismiss()
-                            }
-                        })
-                    } else {
-                        shellClient.execCommand("lxc-freeze $containerName", 1, object : ShellClient.CommandOutputListener {
-                            override fun onOutput(output: String?) {
-                                output?.let {
-                                }
-                            }
-                            override fun onCommandComplete(code: String?) {
+                            } else {
                                 syncer.pause()
                                 screenMask.dismiss()
                             }
-                        })
-                    }
+                            screenMask.dismiss()
+                        }
+                    })
                 }
                 R.id.lxc_attach -> {
                     val terminalCommand = TerminalCommand(false,"sh",emptyArray(),"lxc-attach $containerName",2,true,"/data/share",arrayOf("PATH=/data/share/bin:/system/bin","HOME=/data/share","LXC_CMD=lxc-attach","LXC_ARG=$containerName"))
@@ -149,7 +149,7 @@ class ContainerOverviewFragment : BaseFragment(), MenuProvider {
                 R.id.lxc_copy -> {
                     screenMask.showInputDialog(requireContext(),"Copy",
                         onConfirm = { inputText ->
-                            shellClient.execCommand("lxc-copy $containerName -N $inputText", 5, object : ShellClient.CommandOutputListener {
+                            ShellCommandExecutor.execCommand("lxc-copy $containerName -N $inputText", object : ShellCommandExecutor.CommandOutputListener {
                                 override fun onOutput(output: String?) {
                                     output?.let {
                                         screenMask.showUniqueTextDialog(requireContext(),"Copy",output)
@@ -164,7 +164,6 @@ class ContainerOverviewFragment : BaseFragment(), MenuProvider {
                                             screenMask.dismissUniqueTextDialog("Copy", 5)
                                         }
                                     }
-
                                 }
                             })
                         },
@@ -179,11 +178,8 @@ class ContainerOverviewFragment : BaseFragment(), MenuProvider {
                 R.id.main_switch_bar -> {
                     screenMask.show()
                     if (statusBar.text == "Started") {
-                        shellClient.execCommand("lxc-stop $containerName", 1, object : ShellClient.CommandOutputListener {
-                            override fun onOutput(output: String?) {
-                                output?.let {
-                                }
-                            }
+                        ShellCommandExecutor.execCommand("lxc-stop $containerName", object : ShellCommandExecutor.CommandOutputListener {
+                            override fun onOutput(output: String?) {}
                             override fun onCommandComplete(code: String?) {
                                 syncer.resume()
                                 screenMask.dismiss()
@@ -191,11 +187,8 @@ class ContainerOverviewFragment : BaseFragment(), MenuProvider {
                         })
                     }
                     else if (statusBar.text == "Stopped") {
-                        shellClient.execCommand("lxc-start $containerName", 1, object : ShellClient.CommandOutputListener {
-                            override fun onOutput(output: String?) {
-                                output?.let {
-                                }
-                            }
+                        ShellCommandExecutor.execCommand("lxc-start $containerName", object : ShellCommandExecutor.CommandOutputListener {
+                            override fun onOutput(output: String?) {}
                             override fun onCommandComplete(code: String?) {
                                 syncer.resume()
                                 screenMask.dismiss()
@@ -237,8 +230,7 @@ class ContainerOverviewFragment : BaseFragment(), MenuProvider {
 
     fun onNewData(newValue1: Float, newValue2: Float, lineChart2: LineChart) {
         LxcNetworkChartManager.addEntry(newValue1, newValue2)
-        val lineData = LxcNetworkChartManager.initDoubleLineChart(lineChart2)
-        LxcNetworkChartManager.initDataStyle(lineChart2, lineData)
+        LxcNetworkChartManager.updateChartData(lineChart2)
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {

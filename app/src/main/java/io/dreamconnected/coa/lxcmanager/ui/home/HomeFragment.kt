@@ -19,7 +19,7 @@ import com.rk.libcommons.TerminalCommand
 import io.dreamconnected.coa.lxcmanager.R
 import io.dreamconnected.coa.lxcmanager.databinding.FragmentHomeBinding
 import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
-import io.dreamconnected.coa.lxcmanager.util.ShellClient
+import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
 
 class HomeFragment : BaseFragment(), MenuProvider {
 
@@ -58,22 +58,18 @@ class HomeFragment : BaseFragment(), MenuProvider {
         super.onViewCreated(view, savedInstanceState)
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
 
-        var shellClient = ShellClient.instance ?: throw IllegalStateException("ShellClient not initialized")
-        shellClient.execCommand("lxc-ls --version", 1, object : ShellClient.CommandOutputListener {
+        ShellCommandExecutor.execCommand("lxc-ls --version", object : ShellCommandExecutor.CommandOutputListener {
             override fun onOutput(output: String?) {
-                Log.d(ShellClient.TAG, "Command Output: $output")
-                binding.lxcVer.text=output
+                binding.lxcVer.text = output
             }
-            override fun onCommandComplete(code: String?) {
-            }
+            override fun onCommandComplete(code: String?) {}
         })
 
-        shellClient.execCommand("file $(command -v lxc-ls) | sed \"s|^.*: ||\"", 1, object : ShellClient.CommandOutputListener {
+        ShellCommandExecutor.execCommand("file $(command -v lxc-ls) | sed \"s|^.*: ||\"", object : ShellCommandExecutor.CommandOutputListener {
             override fun onOutput(output: String?) {
-                binding.lxcBuildInfo.text=output
+                binding.lxcBuildInfo.text = output
             }
-            override fun onCommandComplete(code: String?) {
-            }
+            override fun onCommandComplete(code: String?) {}
         })
     }
 

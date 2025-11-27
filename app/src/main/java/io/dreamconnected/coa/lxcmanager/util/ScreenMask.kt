@@ -8,7 +8,6 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.core.view.children
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -18,7 +17,6 @@ import io.dreamconnected.coa.lxcmanager.R
 class ScreenMask(private val context: Context) {
     private var dialog: AlertDialog? = null
     private val dialogMap = mutableMapOf<String, AlertDialog>()
-    private var shellClient = ShellClient.instance ?: throw IllegalStateException("ShellClient not initialized")
     private val paddingInDp = 20
     private val density = context.resources.displayMetrics.density
     private val paddingInPx = (paddingInDp * density).toInt()
@@ -164,7 +162,7 @@ class ScreenMask(private val context: Context) {
                         val command = commandParts.joinToString(" ")
                         println("Generated Command: $command")
 
-                        shellClient.execCommand("lxc-create $command", 5, object : ShellClient.CommandOutputListener {
+                        ShellCommandExecutor.execCommand("lxc-create $command", object : ShellCommandExecutor.CommandOutputListener {
                             override fun onOutput(output: String?) {
                                 output?.let {
                                     showUniqueTextDialog(context,"Create",output)

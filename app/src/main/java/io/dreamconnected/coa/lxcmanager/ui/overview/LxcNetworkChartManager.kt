@@ -100,6 +100,38 @@ class LxcNetworkChartManager {
             return lineData
         }
 
+        fun updateChartData(mLineChart: LineChart) {
+            val lineData = mLineChart.data
+            if (lineData != null && lineData.dataSetCount >= 2) {
+                // Mem
+                val dataSet1 = lineData.getDataSetByIndex(0) as? LineDataSet
+                dataSet1?.let {
+                    it.clear()
+                    for (i in xTimeList.indices) {
+                        it.addEntry(Entry(i.toFloat(), dataList1[i]))
+                    }
+                }
+                
+                // CPU
+                val dataSet2 = lineData.getDataSetByIndex(1) as? LineDataSet
+                dataSet2?.let {
+                    it.clear()
+                    for (i in xTimeList.indices) {
+                        it.addEntry(Entry(i.toFloat(), dataList2[i]))
+                    }
+                }
+                
+                mLineChart.xAxis.valueFormatter = MyValueFormatter(xTimeList)
+                
+                lineData.notifyDataChanged()
+                mLineChart.notifyDataSetChanged()
+                mLineChart.invalidate()
+            } else {
+                val newLineData = initDoubleLineChart(mLineChart)
+                initDataStyle(mLineChart, newLineData)
+            }
+        }
+
         class MyValueFormatter(private val xValues: List<String>) : ValueFormatter() {
             override fun getAxisLabel(value: Float, axis: AxisBase?): String {
                 val index = value.toInt()
