@@ -36,6 +36,9 @@
     <string name="action_overview_export">Export</string>
 
     <!-- Overview Fragment -->
+    <string name="overview">Overview</string>
+    <string name="network">Network</string>
+    <string name="config">Config</string>
     <string name="lxc_freeze">Freeze</string>
     <string name="lxc_attach">Attach</string>
     <string name="lxc_console">Console</string>
@@ -62,4 +65,11 @@
     <string name="summary_settings_theme_dynamic_colors">Use the system\'s theme color</string>
     <string name="label_settings_theme_darkmode">Dark mode</string>
     <string name="label_settings_theme_theme_color">Theme color</string>
+
+    <!-- Repos Fragment -->
+    <string name="no_images_found">No images found</string>
+    
+    <!-- Log Viewer Dialog -->
+    <string name="log_viewer_title">LXC Logs - %s</string>
+    <string name="close">Close</string>
 </resources>

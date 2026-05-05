@@ -7,230 +7,168 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.MenuProvider
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
-import com.github.mikephil.charting.charts.LineChart
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.materialswitch.MaterialSwitch
-import com.rk.karbon_exec.launchInternalTerminal
-import com.rk.libcommons.TerminalCommand
-import io.dreamconnected.coa.lxcmanager.MainActivity
+import com.google.android.material.tabs.TabLayoutMediator
 import io.dreamconnected.coa.lxcmanager.R
 import io.dreamconnected.coa.lxcmanager.databinding.FragmentContainerOverviewBinding
 import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
 import io.dreamconnected.coa.lxcmanager.ui.dashboard.DashboardViewModel
-import io.dreamconnected.coa.lxcmanager.util.ScreenMask
-import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
 
 class ContainerOverviewFragment : BaseFragment(), MenuProvider {
 
     private var _binding: FragmentContainerOverviewBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
     private var containerName: String? = null
-    private lateinit var syncer: SyncContainerStatus
-    private var isUserInitiatedChange = false
-    private var isFreeze = false
-    
+
+    private var currentPosition: Int = 0
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val dashboardViewModel =
-            ViewModelProvider(this)[DashboardViewModel::class.java]
-
+        val dashboardViewModel = ViewModelProvider(this)[DashboardViewModel::class.java]
         _binding = FragmentContainerOverviewBinding.inflate(inflater, container, false)
         val root: View = binding.root
         arguments?.let { containerName = it.getString("container_name") }
-
         setupAppBar(root)
-
         return root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
-        initChart2(view)
 
-        val lineChart2 = view.findViewById<LineChart>(R.id.lxc_network_chart)
-        val statusBar = view.findViewById<MaterialSwitch>(R.id.main_switch_bar)
-        syncer = SyncContainerStatus(object : OnSyncListener {
-            override fun onSync(status: String, cpu: Float, mem: Float) {
-                when (status) {
-                    "RUNNING" -> {
-                        if (!statusBar.isChecked || statusBar.text != getString(R.string.co_container_status_started)) {
-                            statusBar.isEnabled = true
-                            statusBar.isChecked = true
-                            statusBar.text = getString(R.string.co_container_status_started)
-                        }
-                        isFreeze = false
-                        syncer.resume()
-                        onNewData(cpu, mem, lineChart2)
-                    }
-                    "STOPPED" -> {
-                        if (statusBar.isChecked || statusBar.text != getString(R.string.co_container_status_stopped)) {
-                            statusBar.isEnabled = true
-                            statusBar.isChecked = false
-                            statusBar.text = getString(R.string.co_container_status_stopped)
-                        }
-                        isFreeze = false
-                        syncer.pause()
-                    }
-                    "FROZEN" -> {
-                        if (statusBar.isEnabled || statusBar.text != getString(R.string.co_container_status_frozen)) {
-                            statusBar.isEnabled = false
-                            statusBar.isChecked = false
-                            statusBar.text = getString(R.string.co_container_status_frozen)
-                        }
-                        isFreeze = true
-                        syncer.pause()
-                    }
-                    else -> {
-                        if (statusBar.isEnabled || statusBar.text != getString(R.string.co_container_status_frozen)) {
-                            statusBar.isChecked = false
-                            statusBar.isEnabled = false
-                            statusBar.text = getString(R.string.co_container_status_frozen)
-                        }
-                        isFreeze = true
-                        syncer.pause()
-                    }
-                }
+        val viewPager = binding.viewPager
+
+        viewPager.adapter = ViewPagerAdapter(this)
+        
+        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                currentPosition = position
+                updateFabForPosition(position)
             }
         })
 
-        containerName?.let { syncer.start(it, 5000) }
-        syncer.startStatusCheck()
+        TabLayoutMediator(binding.tabLayout, viewPager) { tab, position ->
+            tab.text = when (position) {
+                0 -> getString(R.string.overview)
+                1 -> getString(R.string.network)
+                2 -> getString(R.string.config)
+                else -> getString(R.string.overview)
+            }
+        }.attach()
 
-        val lxcFreeze = view.findViewById<ImageButton>(R.id.lxc_freeze)
-        val lxcAttach = view.findViewById<ImageButton>(R.id.lxc_attach)
-        val lxcConsole = view.findViewById<ImageButton>(R.id.lxc_console)
-        val lxcCopy = view.findViewById<ImageButton>(R.id.lxc_copy)
-        val lxcSnapshot = view.findViewById<ImageButton>(R.id.lxc_snapshot)
-        val lxcDestroy = view.findViewById<ImageButton>(R.id.lxc_destroy)
-        val screenMask = ScreenMask(requireContext())
+        setupFabListeners()
+        updateFabForPosition(0)
+    }
 
-        val clickListener = View.OnClickListener { view ->
-            when (view.id) {
-                R.id.lxc_freeze -> {
-                    screenMask.show()
-                    val command = if (isFreeze) "lxc-unfreeze $containerName" else "lxc-freeze $containerName"
-                    ShellCommandExecutor.execCommand(command, object : ShellCommandExecutor.CommandOutputListener {
-                        override fun onOutput(output: String?) {}
-                        override fun onCommandComplete(code: String?) {
-                            if (isFreeze) {
-                                syncer.resume()
-                            } else {
-                                syncer.pause()
-                                screenMask.dismiss()
-                            }
-                            screenMask.dismiss()
-                        }
-                    })
+    private fun setupFabListeners() {
+        binding.fabPrimary.setOnClickListener {
+            when (currentPosition) {
+                0 -> {
                 }
-                R.id.lxc_attach -> {
-                    val terminalCommand = TerminalCommand(false,"sh",emptyArray(),"lxc-attach $containerName",2,true,"/data/share",arrayOf("PATH=/data/share/bin:/system/bin","HOME=/data/share","LXC_CMD=lxc-attach","LXC_ARG=$containerName"))
-                    launchInternalTerminal(requireContext(),terminalCommand)
+                1 -> {
+                    (getChildFragmentAtPosition(1) as? ContainerNetworkFragment)?.showAddInterfaceDialog()
                 }
-                R.id.lxc_console -> {
-                    val terminalCommand = TerminalCommand(false,"sh",emptyArray(),"lxc-console $containerName",2,true,"/data/share",arrayOf("PATH=/data/share/bin:/system/bin","HOME=/data/share","LXC_CMD=lxc-console","LXC_ARG=$containerName"))
-                    launchInternalTerminal(requireContext(),terminalCommand)
-                }
-                R.id.lxc_copy -> {
-                    screenMask.showInputDialog(requireContext(),"Copy",
-                        onConfirm = { inputText ->
-                            ShellCommandExecutor.execCommand("lxc-copy $containerName -N $inputText", object : ShellCommandExecutor.CommandOutputListener {
-                                override fun onOutput(output: String?) {
-                                    output?.let {
-                                        screenMask.showUniqueTextDialog(requireContext(),"Copy",output)
-                                    }
-                                }
-                                override fun onCommandComplete(code: String?) {
-                                    code?.let {
-                                        if (it.contains("EXITCODE 0")) {
-                                            Toast.makeText(requireContext(), "OK", Toast.LENGTH_LONG).show()
-                                            screenMask.dismissUniqueTextDialog("Copy")
-                                        } else {
-                                            screenMask.dismissUniqueTextDialog("Copy", 5)
-                                        }
-                                    }
-                                }
-                            })
-                        },
-                        onCancel = { })
-                }
-                R.id.lxc_snapshot -> {
-
-                }
-                R.id.lxc_destroy -> {
-
-                }
-                R.id.main_switch_bar -> {
-                    screenMask.show()
-                    if (statusBar.text == "Started") {
-                        ShellCommandExecutor.execCommand("lxc-stop $containerName", object : ShellCommandExecutor.CommandOutputListener {
-                            override fun onOutput(output: String?) {}
-                            override fun onCommandComplete(code: String?) {
-                                syncer.resume()
-                                screenMask.dismiss()
-                            }
-                        })
-                    }
-                    else if (statusBar.text == "Stopped") {
-                        ShellCommandExecutor.execCommand("lxc-start $containerName", object : ShellCommandExecutor.CommandOutputListener {
-                            override fun onOutput(output: String?) {}
-                            override fun onCommandComplete(code: String?) {
-                                syncer.resume()
-                                screenMask.dismiss()
-                            }
-                        })
-                    }
-                    else {
-                        Toast.makeText(requireContext(), "This toast shouldn't be there. It's a bug.", Toast.LENGTH_LONG).show()
-                        screenMask.dismiss()
-                    }
+                2 -> {
+                    (getChildFragmentAtPosition(2) as? ContainerConfigFragment)?.saveConfig()
                 }
             }
         }
 
-        lxcFreeze.setOnClickListener(clickListener)
-        lxcAttach.setOnClickListener(clickListener)
-        lxcConsole.setOnClickListener(clickListener)
-        lxcCopy.setOnClickListener(clickListener)
-        lxcSnapshot.setOnClickListener(clickListener)
-        lxcDestroy.setOnClickListener(clickListener)
-        statusBar.setOnClickListener(clickListener)
+        binding.fabSecondary.setOnClickListener {
+            when (currentPosition) {
+                0 -> {
+                }
+                1 -> {
+                    (getChildFragmentAtPosition(1) as? ContainerNetworkFragment)?.saveChanges()
+                }
+                2 -> {
+                }
+            }
+        }
     }
 
-    private fun initChart2(binding: View) {
-        val lineChart2 = binding.findViewById<LineChart>(R.id.lxc_network_chart)
-        lineChart2.description.text = "CPU %/Mem %"
-
-        val numX = 5
-        val dataCPU = floatArrayOf(0f, 0f, 0f, 0f, 0f)
-        val dataMem = floatArrayOf(0f, 0f, 0f, 0f, 0f)
-
-        LxcNetworkChartManager.setLineName1("Mem")
-        LxcNetworkChartManager.setLineName2("CPU")
-        LxcNetworkChartManager.initData(numX, dataCPU, dataMem)
-
-        val lineData = LxcNetworkChartManager.initDoubleLineChart(lineChart2)
-        LxcNetworkChartManager.initDataStyle(lineChart2, lineData)
+    private fun getChildFragmentAtPosition(position: Int): Fragment? {
+        val adapter = binding.viewPager.adapter as? ViewPagerAdapter ?: return null
+        return adapter.getFragmentAtPosition(position)
     }
 
-    fun onNewData(newValue1: Float, newValue2: Float, lineChart2: LineChart) {
-        LxcNetworkChartManager.addEntry(newValue1, newValue2)
-        LxcNetworkChartManager.updateChartData(lineChart2)
+    private fun updateFabForPosition(position: Int) {
+        when (position) {
+            0 -> {
+                binding.fabPrimary.visibility = View.GONE
+                binding.fabSecondary.visibility = View.GONE
+            }
+            1 -> {
+                binding.fabPrimary.visibility = View.VISIBLE
+                binding.fabSecondary.visibility = View.VISIBLE
+                binding.fabPrimary.setImageResource(R.drawable.fab_add_large)
+                binding.fabPrimary.contentDescription = getString(R.string.lxc_copy)
+                binding.fabSecondary.setImageResource(R.drawable.fab_add_large)
+                binding.fabSecondary.contentDescription = getString(R.string.action_overview_export)
+            }
+            2 -> {
+                binding.fabPrimary.visibility = View.VISIBLE
+                binding.fabSecondary.visibility = View.GONE
+                binding.fabPrimary.setImageResource(R.drawable.fab_add_large)
+                binding.fabPrimary.contentDescription = getString(R.string.action_overview_export)
+            }
+        }
+    }
+
+    private inner class ViewPagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
+        private val fragments = mutableMapOf<Int, Fragment>()
+
+        override fun getItemCount(): Int = 3
+
+        override fun createFragment(position: Int): Fragment {
+            val fragment = when (position) {
+                0 -> {
+                    ContainerOverviewChildFragment().also {
+                        val args = Bundle()
+                        args.putString("container_name", containerName)
+                        it.arguments = args
+                    }
+                }
+                1 -> {
+                    ContainerNetworkFragment().also {
+                        val args = Bundle()
+                        args.putString("container_name", containerName)
+                        it.arguments = args
+                    }
+                }
+                2 -> {
+                    ContainerConfigFragment().also {
+                        val args = Bundle()
+                        args.putString("container_name", containerName)
+                        it.arguments = args
+                    }
+                }
+                else -> {
+                    ContainerOverviewChildFragment().also {
+                        val args = Bundle()
+                        args.putString("container_name", containerName)
+                        it.arguments = args
+                    }
+                }
+            }
+            fragments[position] = fragment
+            return fragment
+        }
+
+        fun getFragmentAtPosition(position: Int): Fragment? = fragments[position]
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -250,30 +188,25 @@ class ContainerOverviewFragment : BaseFragment(), MenuProvider {
 
     override fun onResume() {
         super.onResume()
-        (activity as? MainActivity)?.hideBottomNavigation()
-        syncer.resume()
+        (activity as? io.dreamconnected.coa.lxcmanager.MainActivity)?.hideBottomNavigation()
     }
 
     override fun onPause() {
         super.onPause()
-        (activity as? MainActivity)?.showBottomNavigation()
-        syncer.pause()
+        (activity as? io.dreamconnected.coa.lxcmanager.MainActivity)?.showBottomNavigation()
     }
 
     override fun setupAppBar(binding: View) {
         super.setupAppBar(binding)
-        val collapsingToolbarLayout =
-            binding.findViewById<CollapsingToolbarLayout>(R.id.collapsingToolbarLayout)
+        val collapsingToolbarLayout = binding.findViewById<CollapsingToolbarLayout>(R.id.collapsingToolbarLayout)
         collapsingToolbarLayout.title = containerName
         val toolbar = binding.findViewById<Toolbar>(R.id.toolbar)
-        (toolbar.context as AppCompatActivity).supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        toolbar.setNavigationOnClickListener {
-            findNavController().navigateUp()
-        }
+        (toolbar.context as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        toolbar.setNavigationOnClickListener { findNavController().navigateUp() }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        syncer.stop()
+        _binding = null
     }
 }

@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingHorizontal="@dimen/activity_horizontal_margin"
+    android:paddingVertical="?dialogPreferredPadding">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="?colorSecondaryContainer"
+                app:cardCornerRadius="30dp"
+                app:cardPreventCornerOverlap="false"
+                android:outlineAmbientShadowColor="?colorSecondaryContainer"
+                android:outlineSpotShadowColor="?colorSecondaryContainer"
+                style="@style/Widget.Material3.CardView.Elevated">
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/main_switch_bar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="25dp"
+                    android:text="@string/lxc_start"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                    app:track="@drawable/selector_main_switch_bar_track"
+                    app:trackDecoration="@drawable/main_switch_bar_track_decoration"
+                    tools:ignore="VisualLintButtonSize" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:baselineAligned="false"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:weightSum="6"
+                    tools:ignore="UselessParent">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageButton
+                            android:id="@+id/lxc_freeze"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@null"
+                            android:contentDescription="@string/lxc_freeze"
+                            android:src="@drawable/lxc_freeze" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:maxLines="1"
+                            android:text="@string/lxc_freeze"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageButton
+                            android:id="@+id/lxc_attach"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@null"
+                            android:contentDescription="@string/lxc_attach"
+                            android:src="@drawable/lxc_attach" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:maxLines="1"
+                            android:text="@string/lxc_attach"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageButton
+                            android:id="@+id/lxc_console"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@null"
+                            android:contentDescription="@string/lxc_console"
+                            android:src="@drawable/lxc_console" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:maxLines="1"
+                            android:text="@string/lxc_console"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageButton
+                            android:id="@+id/lxc_copy"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@null"
+                            android:contentDescription="@string/lxc_copy"
+                            android:src="@drawable/lxc_copy" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:maxLines="1"
+                            android:text="@string/lxc_copy"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageButton
+                            android:id="@+id/lxc_snapshot"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@null"
+                            android:contentDescription="@string/lxc_snapshot"
+                            android:src="@drawable/lxc_snapshot" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:maxLines="1"
+                            android:text="@string/lxc_snapshot"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageButton
+                            android:id="@+id/lxc_destroy"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@null"
+                            android:contentDescription="@string/lxc_destroy"
+                            android:src="@drawable/lxc_destroy" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:maxLines="1"
+                            android:text="@string/lxc_destroy"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/lxc_network_chart"
+                android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:layout_marginTop="10dp" />
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

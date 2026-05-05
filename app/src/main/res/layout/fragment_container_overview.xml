@@ -3,252 +3,79 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_height="match_parent"
     android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     tools:context=".ui.dashboard.DashboardFragment">
 
     <com.google.android.material.appbar.AppBarLayout
-        android:layout_height="wrap_content"
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:id="@+id/appBarLayout">
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
-            android:layout_height="?collapsingToolbarLayoutLargeSize"
+            android:id="@+id/collapsingToolbarLayout"
             android:layout_width="match_parent"
+            android:layout_height="?collapsingToolbarLayoutLargeSize"
             app:contentScrim="?attr/colorSurfaceContainer"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:titleCollapseMode="scale"
-            android:id="@+id/collapsingToolbarLayout">
+            app:titleCollapseMode="scale">
 
             <com.google.android.material.appbar.MaterialToolbar
-                android:layout_height="?actionBarSize"
+                android:id="@+id/toolbar"
                 android:layout_width="match_parent"
-                app:layout_collapseMode="pin"
-                android:id="@+id/toolbar" />
+                android:layout_height="?actionBarSize"
+                app:layout_collapseMode="pin" />
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
 
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorSurface"
+            app:tabIndicatorColor="?attr/colorPrimary"
+            app:tabTextColor="?attr/colorOnSurfaceVariant"
+            app:tabSelectedTextColor="?attr/colorPrimary" />
+
     </com.google.android.material.appbar.AppBarLayout>
 
-    <FrameLayout
-        android:layout_height="wrap_content"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
         android:layout_width="match_parent"
-        android:animateLayoutChanges="true"
-        android:paddingVertical="?dialogPreferredPadding"
-        android:orientation="vertical"
-        android:clipChildren="false"
+        android:layout_height="match_parent"
+        android:paddingBottom="56dp"
         android:clipToPadding="false"
-        android:paddingHorizontal="@dimen/activity_horizontal_margin"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        android:fitsSystemWindows="false">
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-        <androidx.core.widget.NestedScrollView
-            android:layout_height="match_parent"
-            android:layout_width="match_parent"
-            android:scrollbars="none">
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|bottom"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="10dp"
+        android:orientation="vertical">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_secondary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:src="@drawable/fab_import"
+            app:backgroundTint="?attr/colorSecondary"
+            app:tint="?attr/colorOnSecondary"
+            android:importantForAccessibility="no" />
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_height="wrap_content"
-                    android:layout_width="match_parent"
-                    app:cardCornerRadius="30dp"
-                    android:outlineSpotShadowColor="?colorSecondaryContainer"
-                    app:cardBackgroundColor="?colorSecondaryContainer"
-                    style="@style/Widget.Material3.CardView.Elevated"
-                    android:outlineAmbientShadowColor="?colorSecondaryContainer"
-                    app:cardPreventCornerOverlap="false">
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_primary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/fab_add_large"
+            app:backgroundTint="?attr/colorPrimary"
+            app:tint="?attr/colorOnPrimary"
+            android:importantForAccessibility="no" />
 
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/main_switch_bar"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:padding="25dp"
-                        android:text="@string/lxc_start"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
-                        app:track="@drawable/selector_main_switch_bar_track"
-                        app:trackDecoration="@drawable/main_switch_bar_track_decoration"
-                        tools:ignore="VisualLintButtonSize" />
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:baselineAligned="false"
-                        android:orientation="horizontal"
-                        android:gravity="center"
-                        android:weightSum="6"
-                        tools:ignore="UselessParent">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center">
-
-                            <ImageButton
-                                android:id="@+id/lxc_freeze"
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:background="@null"
-                                android:src="@drawable/lxc_freeze"
-                                android:contentDescription="@string/lxc_freeze" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/lxc_freeze"
-                                android:textSize="12sp"
-                                android:maxLines="1"
-                                android:gravity="center"/>
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center">
-
-                            <ImageButton
-                                android:id="@+id/lxc_attach"
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:background="@null"
-                                android:src="@drawable/lxc_attach"
-                                android:contentDescription="@string/lxc_attach" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/lxc_attach"
-                                android:textSize="12sp"
-                                android:maxLines="1"
-                                android:gravity="center"/>
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center">
-
-                            <ImageButton
-                                android:id="@+id/lxc_console"
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:background="@null"
-                                android:src="@drawable/lxc_console"
-                                android:contentDescription="@string/lxc_console" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/lxc_console"
-                                android:textSize="12sp"
-                                android:maxLines="1"
-                                android:gravity="center"/>
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center">
-
-                            <ImageButton
-                                android:id="@+id/lxc_copy"
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:background="@null"
-                                android:src="@drawable/lxc_copy"
-                                android:contentDescription="@string/lxc_copy" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/lxc_copy"
-                                android:textSize="12sp"
-                                android:maxLines="1"
-                                android:gravity="center"/>
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center">
-
-                            <ImageButton
-                                android:id="@+id/lxc_snapshot"
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:background="@null"
-                                android:src="@drawable/lxc_snapshot"
-                                android:contentDescription="@string/lxc_snapshot" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/lxc_snapshot"
-                                android:textSize="12sp"
-                                android:maxLines="1"
-                                android:gravity="center"/>
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center">
-
-                            <ImageButton
-                                android:id="@+id/lxc_destroy"
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:background="@null"
-                                android:src="@drawable/lxc_destroy"
-                                android:contentDescription="@string/lxc_destroy" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/lxc_destroy"
-                                android:textSize="12sp"
-                                android:maxLines="1"
-                                android:gravity="center"/>
-                        </LinearLayout>
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-                <com.github.mikephil.charting.charts.LineChart
-                    android:layout_marginTop="10dp"
-                    android:id="@+id/lxc_network_chart"
-                    android:layout_width="match_parent"
-                    android:layout_height="240dp" />
-
-            </LinearLayout>
-
-        </androidx.core.widget.NestedScrollView>
-
-    </FrameLayout>
+    </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
