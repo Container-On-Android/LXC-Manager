@@ -47,12 +47,19 @@ android {
     }
 
     buildFeatures {
+        aidl = true
         viewBinding = true
         dataBinding = true
     }
 
     configurations.all {
         exclude(group = "androidx.appcompat", module = "appcompat")
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 }
 
@@ -76,6 +83,7 @@ dependencies {
     implementation(libs.mpandroidchart)
     implementation(libs.dev.material.preference)
     implementation(libs.libsu.core)
+    implementation(libs.libsu.service)
 
     implementation(project(":ReTerminal:application"))
     implementation(project(":ReTerminal:components"))
