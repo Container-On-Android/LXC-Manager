@@ -1,20 +1,47 @@
 package io.dreamconnected.coa.lxcmanager
 
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
+import android.os.RemoteException
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.edit
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI
 import androidx.preference.PreferenceManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.topjohnwu.superuser.ipc.RootService
 import io.dreamconnected.coa.lxcmanager.databinding.ActivityMainBinding
 import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
 import io.dreamconnected.coa.lxcmanager.util.ThemeUtil
+import io.github.coap.IService
+import io.github.coap.lxc.LxcManager
+import io.github.coap.lxc.LxcNative
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private var lxcService: IService? = null
+    private var lxcManager: LxcManager? = null
+    private var isServiceBound = false
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, service: IBinder) {
+            Log.d(TAG, "LXC Service connected")
+            lxcService = IService.Stub.asInterface(service)
+            initLxcManager()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName) {
+            Log.d(TAG, "LXC Service disconnected")
+            lxcService = null
+            lxcManager = null
+            isServiceBound = false
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeUtil.setTheme(this)
@@ -38,37 +65,43 @@ class MainActivity : AppCompatActivity() {
         ).commit()
 
         initLxcPath()
+        bindLxcService()
+    }
+
+    private fun bindLxcService() {
+        val intent = Intent(this, LxcNative::class.java)
+        RootService.bind(intent, serviceConnection)
     }
 
     private fun initLxcPath() {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-        val customLxcPath = sharedPreferences.getString("lxc_dir", "/data/share")
+        val customLxcPath = sharedPreferences.getString("lxc_dir", "/data/share/var/lib/lxc")
+        LxcNative.LXC_PATH = customLxcPath ?: LxcNative.LXC_PATH
         val sharedPref = this.getPreferences(MODE_PRIVATE)
+    }
 
-        ShellCommandExecutor.execCommand(
-            "for dir in $customLxcPath /data/share /data/lxc; do [ -d \"\$dir\" ] && echo \"\$dir\" && break; done",
-            object : ShellCommandExecutor.CommandOutputListener {
-                override fun onOutput(output: String?) {
-                    output?.let {
-                        if (it.isNotEmpty()) {
-                            sharedPref.edit {
-                                putString(getString(R.string.lxc_path), output)
-                                putString(
-                                    getString(R.string.lxc_ld_path),
-                                    "$output/lib:$output/lib64:/data/sysroot/lib:/data/sysroot/lib64"
-                                )
-                                putString(
-                                    getString(R.string.lxc_bin_path),
-                                    "$output/bin:$output/libexec/lxc:"
-                                )
-                            }
-                        }
-                    }
-                }
-                override fun onCommandComplete(code: String?) {
-                }
-            }
-        )
+    private fun initLxcManager() {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        val customLxcPath = sharedPreferences.getString("lxc_dir", LxcNative.LXC_PATH)
+        lxcManager = LxcManager(lxcService, customLxcPath)
+        isServiceBound = true
+        Log.d(TAG, "LxcManager initialized: ${lxcManager?.toString()}")
+    }
+
+    fun getLxcManager(): LxcManager? {
+        return lxcManager
+    }
+
+    fun isLxcServiceAvailable(): Boolean {
+        return isServiceBound && lxcManager?.isServiceAvailable == true
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isServiceBound) {
+            RootService.unbind(serviceConnection)
+            isServiceBound = false
+        }
     }
 
     fun hideBottomNavigation() {
@@ -79,5 +112,9 @@ class MainActivity : AppCompatActivity() {
     fun showBottomNavigation() {
         val bottomNavigationView = findViewById<BottomNavigationView>(R.id.nav_view)
         bottomNavigationView.visibility = View.VISIBLE
+    }
+
+    companion object {
+        private const val TAG = "MainActivity"
     }
 }

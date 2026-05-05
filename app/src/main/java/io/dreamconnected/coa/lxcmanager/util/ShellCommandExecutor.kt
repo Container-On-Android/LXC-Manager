@@ -73,4 +73,16 @@ object ShellCommandExecutor {
             listener?.let { mainHandler.post { it.onCommandComplete("EXITCODE 1") } }
         }
     }
+
+    fun execCommandSync(command: String): String {
+        return try {
+            val envCommands = buildEnvironmentCommands()
+            val finalCommands = if (envCommands.isEmpty()) listOf(command) else envCommands + command
+            val result = Shell.cmd(*finalCommands.toTypedArray()).exec()
+            (result.out ?: emptyList()).joinToString("\n")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to execute command synchronously: $command", e)
+            ""
+        }
+    }
 }

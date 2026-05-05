@@ -1,7 +1,6 @@
 package io.dreamconnected.coa.lxcmanager.ui.home
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -14,12 +13,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.rk.karbon_exec.launchInternalTerminal
-import com.rk.libcommons.TerminalCommand
+import io.dreamconnected.coa.lxcmanager.MainActivity
 import io.dreamconnected.coa.lxcmanager.R
 import io.dreamconnected.coa.lxcmanager.databinding.FragmentHomeBinding
 import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
-import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
+import io.github.coap.lxc.LxcNative
+
 
 class HomeFragment : BaseFragment(), MenuProvider {
 
@@ -58,21 +57,9 @@ class HomeFragment : BaseFragment(), MenuProvider {
         super.onViewCreated(view, savedInstanceState)
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
 
-        ShellCommandExecutor.execCommand("lxc-ls --version", object : ShellCommandExecutor.CommandOutputListener {
-            override fun onOutput(output: String?) {
-                binding.lxcVer.text = output
-            }
-            override fun onCommandComplete(code: String?) {}
-        })
-
-        ShellCommandExecutor.execCommand("file $(command -v lxc-ls) | sed \"s|^.*: ||\"", object : ShellCommandExecutor.CommandOutputListener {
-            override fun onOutput(output: String?) {
-                binding.lxcBuildInfo.text = output
-            }
-            override fun onCommandComplete(code: String?) {}
-        })
+        val version = LxcNative.getVersion()
+        binding.lxcVer.text = version ?: "Null"
     }
-
     override fun setupAppBar(binding: View) {
         super.setupAppBar(binding)
         val collapsingToolbarLayout =

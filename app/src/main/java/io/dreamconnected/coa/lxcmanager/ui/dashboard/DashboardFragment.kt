@@ -15,6 +15,7 @@ import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
 import io.dreamconnected.coa.lxcmanager.ui.dashboard.ItemAdapter.OnItemClickListener
 import io.dreamconnected.coa.lxcmanager.util.LxcTemplates
 import io.dreamconnected.coa.lxcmanager.util.ScreenMask
+import io.github.coap.lxc.LxcManager
 
 class DashboardFragment : BaseFragment(),OnItemClickListener {
 
@@ -66,6 +67,8 @@ class DashboardFragment : BaseFragment(),OnItemClickListener {
             )
             ScreenMask(requireContext()).showTemplateSelectionDialog(requireContext(),templates)
         }
+        val lxcManager = (requireActivity() as io.dreamconnected.coa.lxcmanager.MainActivity).getLxcManager()
+        dashboardViewModel.setLxcManager(lxcManager)
     }
 
     override fun onResume() {
