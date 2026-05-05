@@ -566,4 +566,7 @@
     <color name="md_theme_yellow_surfaceContainer_highContrast">#333027</color>
     <color name="md_theme_yellow_surfaceContainerHigh_highContrast">#3E3B32</color>
     <color name="md_theme_yellow_surfaceContainerHighest_highContrast">#4A473D</color>
+
+    <color name="log_background_color">#1e1e1e</color>
+    <color name="log_text_color">#e0e0e0</color>
 </resources>
