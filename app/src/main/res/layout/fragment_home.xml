@@ -107,52 +107,14 @@
 
                 </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_height="wrap_content"
+                <LinearLayout
+                    android:id="@+id/message_card_container"
                     android:layout_width="match_parent"
-                    android:outlineSpotShadowColor="?colorPrimaryContainer"
-                    app:cardBackgroundColor="?colorPrimaryContainer"
-                    style="@style/Widget.Material3.CardView.Elevated"
-                    android:outlineAmbientShadowColor="?colorPrimaryContainer"
-                    app:cardPreventCornerOverlap="false"
-                    android:layout_marginTop="16dp">
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:animateLayoutChanges="true">
 
-                    <LinearLayout
-                        android:layout_height="wrap_content"
-                        android:layout_width="match_parent"
-                        android:padding="?dialogPreferredPadding"
-                        android:orientation="vertical">
-
-                        <com.google.android.material.textview.MaterialTextView
-                            android:layout_height="wrap_content"
-                            android:layout_width="match_parent"
-                            android:id="@+id/card_home_manager_warning_title"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                            android:text="@string/card_home_manager_warning_title" />
-
-                        <com.google.android.material.textview.MaterialTextView
-                            android:layout_height="wrap_content"
-                            android:layout_width="match_parent"
-                            style="@style/StyleValueManagerInfo"
-                            android:id="@+id/card_home_manager_warning_content"
-                            android:text="@string/card_home_manager_warning_content" />
-
-                        <LinearLayout
-                            android:layout_height="wrap_content"
-                            android:layout_width="match_parent"
-                            android:orientation="horizontal"
-                            android:gravity="end">
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/action_main_warring"
-                                android:layout_height="wrap_content"
-                                android:layout_width="wrap_content"
-                                android:text="@string/card_home_manager_warning_action" />
-
-                        </LinearLayout>
-                    </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
 
                 <com.google.android.material.card.MaterialCardView
                     android:layout_height="wrap_content"

@@ -17,6 +17,9 @@ import io.dreamconnected.coa.lxcmanager.MainActivity
 import io.dreamconnected.coa.lxcmanager.R
 import io.dreamconnected.coa.lxcmanager.databinding.FragmentHomeBinding
 import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
+import io.dreamconnected.coa.lxcmanager.util.MessageCardManager
+import io.dreamconnected.coa.lxcmanager.util.MessageCardManager.Companion.addMessage
+import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor.execCommandSync
 import io.github.coap.lxc.LxcNative
 
 
@@ -45,11 +48,9 @@ class HomeFragment : BaseFragment(), MenuProvider {
         }
         setupAppBar(root)
 
-        val actionMainWarringButton = binding.actionMainWarring
-        actionMainWarringButton.setOnClickListener {
-//            val terminalCommand = TerminalCommand(false,"env",arrayOf(""),"2",2,false,"/sdcard",arrayOf(""))
-//            launchInternalTerminal(requireContext(),terminalCommand)
-        }
+        MessageCardManager.attachContainer(binding.messageCardContainer)
+        setupMessage()
+
         return root
     }
 
@@ -59,6 +60,25 @@ class HomeFragment : BaseFragment(), MenuProvider {
 
         val version = LxcNative.getVersion()
         binding.lxcVer.text = version ?: "Null"
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val mountOutput = execCommandSync("mount | grep cgroup")
+            val cgrouprcOutput = execCommandSync("strings /dev/cgroup_info/cgroup.rc")
+            val cgroupsjsonOutput = execCommandSync("cat /system/etc/cgroups.json")
+
+            withContext(Dispatchers.Main) {
+                binding.deviceCgroup.text = buildString {
+                    appendLine("=== Mount (cgroup) ===")
+                    appendLine(mountOutput)
+                    appendLine()
+                    appendLine("=== cgroup.rc ===")
+                    appendLine(cgrouprcOutput)
+                    appendLine()
+                    appendLine("=== cgroups.json ===")
+                    appendLine(cgroupsjsonOutput)
+                }
+            }
+        }
     }
     override fun setupAppBar(binding: View) {
         super.setupAppBar(binding)
@@ -67,6 +87,7 @@ class HomeFragment : BaseFragment(), MenuProvider {
         collapsingToolbarLayout.title = getString(R.string.title_home)
     }
 
+    fun setupMessage() {
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
         menuInflater.inflate(R.menu.menu_home, menu)
     }
