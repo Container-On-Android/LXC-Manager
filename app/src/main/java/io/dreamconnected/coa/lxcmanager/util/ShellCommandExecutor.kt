@@ -4,15 +4,15 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
 import io.dreamconnected.coa.lxcmanager.R
-import kotlin.system.exitProcess
 
 object ShellCommandExecutor {
 
     interface CommandOutputListener {
         fun onOutput(output: String?)
-        fun onCommandComplete(code: String?)
+        fun onCommandComplete(success: Boolean, exitCode: Int, output: String?)
     }
 
     private const val TAG = "ShellCommandExecutor"
@@ -27,15 +27,6 @@ object ShellCommandExecutor {
             Shell.Builder.create()
                 .setFlags(Shell.FLAG_REDIRECT_STDERR)
         )
-        Shell.isAppGrantedRoot()?.let {
-            if (!it) ScreenMask(context).showDebugDialog(
-                context,
-                context.resources.getString(R.string.root_grant_req),
-                context.resources.getString(R.string.root_grant_err_no_su),
-                onConfirm = {
-                    exitProcess(0)
-                })
-        }
     }
 
     private fun buildEnvironmentCommands(): List<String> {
@@ -61,16 +52,23 @@ object ShellCommandExecutor {
         try {
             val envCommands = buildEnvironmentCommands()
             val finalCommands = if (envCommands.isEmpty()) listOf(command) else envCommands + command
-            Shell.cmd(*finalCommands.toTypedArray()).submit { result ->
-                val outputs = (result.out ?: emptyList()) + (result.err ?: emptyList())
-                outputs.forEach { line ->
-                    listener?.let { mainHandler.post { it.onOutput(line) } }
+            val outputList = mutableListOf<String>()
+            val callbackList = object : CallbackList<String>() {
+                override fun onAddElement(s: String?) {
+                    outputList.add(s ?: "")
+                    listener?.let { mainHandler.post { it.onOutput(s) } }
                 }
-                listener?.let { mainHandler.post { it.onCommandComplete("EXITCODE ${result.code}") } }
             }
+            Shell.cmd(*finalCommands.toTypedArray())
+                .to(callbackList)
+                .submit { result ->
+                    listener?.let { mainHandler.post {
+                        it.onCommandComplete(result.isSuccess, result.code, outputList.joinToString("\n"))
+                    } }
+                }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to execute command: $command", e)
-            listener?.let { mainHandler.post { it.onCommandComplete("EXITCODE 1") } }
+            listener?.let { mainHandler.post { it.onCommandComplete(false, -1, e.message) } }
         }
     }
 
@@ -79,7 +77,7 @@ object ShellCommandExecutor {
             val envCommands = buildEnvironmentCommands()
             val finalCommands = if (envCommands.isEmpty()) listOf(command) else envCommands + command
             val result = Shell.cmd(*finalCommands.toTypedArray()).exec()
-            (result.out ?: emptyList()).joinToString("\n")
+            result.out.joinToString("\n")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to execute command synchronously: $command", e)
             ""

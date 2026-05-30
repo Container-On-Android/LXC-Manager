@@ -83,6 +83,9 @@ object Settings {
         get() = Preference.getBoolean(key = "force_soft_keyboard", default = true)
         set(value) = Preference.setBoolean(key = "force_soft_keyboard",value)
 
+    var lxc_dir
+        get() = Preference.getString(key = "lxc_dir", default = "/data/share/var/lib/lxc")
+        set(value) = Preference.setString(key = "lxc_dir", value)
 
 
 }

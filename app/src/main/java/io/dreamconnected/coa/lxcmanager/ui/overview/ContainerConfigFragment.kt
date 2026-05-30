@@ -59,8 +59,7 @@ class ContainerConfigFragment : BaseFragment() {
             return
         }
 
-        val lxcPath = container.getLxcPath()
-        val configPath = "$lxcPath/$containerName/config"
+        val configPath = container.configFileName()
         
         val result = ShellCommandExecutor.execCommandSync("cat $configPath")
         
@@ -104,9 +103,9 @@ class ContainerConfigFragment : BaseFragment() {
         ShellCommandExecutor.execCommand("echo '$escapedContent' > $configPath", object : ShellCommandExecutor.CommandOutputListener {
             override fun onOutput(output: String?) {}
             
-            override fun onCommandComplete(code: String?) {
+            override fun onCommandComplete(success: Boolean, exitCode: Int, output: String?) {
                 requireActivity().runOnUiThread {
-                    if (code?.contains("EXITCODE 0") == true) {
+                    if (success) {
                         configContent = newContent
                         hasChanges = false
                         Toast.makeText(requireContext(), "Config saved", Toast.LENGTH_SHORT).show()

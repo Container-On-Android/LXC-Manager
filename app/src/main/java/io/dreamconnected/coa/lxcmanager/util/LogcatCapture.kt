@@ -29,7 +29,7 @@ class LogcatCapture(private val tagFilter: String) {
                         }
                     }
 
-                    override fun onCommandComplete(code: String?) {
+                    override fun onCommandComplete(success: Boolean, exitCode: Int, output: String?) {
                         Log.d("LogcatCapture", "Captured ${logs.size} lxc logs")
                         callback(logs)
                     }

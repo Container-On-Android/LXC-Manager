@@ -168,16 +168,13 @@ class ScreenMask(private val context: Context) {
                                     showUniqueTextDialog(context,"Create",output)
                                 }
                             }
-                            override fun onCommandComplete(code: String?) {
-                                code?.let {
-                                    if (it.contains("EXITCODE 0")) {
-                                        Toast.makeText(context, "OK", Toast.LENGTH_LONG).show()
-                                        dismissUniqueTextDialog("Create")
-                                    } else {
-                                        dismissUniqueTextDialog("Create", 5)
-                                    }
+                            override fun onCommandComplete(success: Boolean, exitCode: Int, output: String?) {
+                                if (success) {
+                                    Toast.makeText(context, "OK", Toast.LENGTH_LONG).show()
+                                    dismissUniqueTextDialog("Create")
+                                } else {
+                                    dismissUniqueTextDialog("Create", 5)
                                 }
-
                             }
                         })
                     }

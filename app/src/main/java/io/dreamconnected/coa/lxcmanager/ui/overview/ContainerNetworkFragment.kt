@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import io.dreamconnected.coa.lxcmanager.MainActivity
@@ -55,7 +56,7 @@ class ContainerNetworkFragment : BaseFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         _binding = FragmentContainerNetworkBinding.inflate(inflater, container, false)
         arguments?.let { containerName = it.getString("container_name") }
         return binding.root
@@ -120,7 +121,7 @@ class ContainerNetworkFragment : BaseFragment() {
         binding.recyclerView.adapter = adapter
     }
 
-    public fun showAddInterfaceDialog() {
+    fun showAddInterfaceDialog() {
         val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_add_interface, null)
         val autoCompleteType = dialogView.findViewById<MaterialAutoCompleteTextView>(R.id.auto_complete_type)
         val editLink = dialogView.findViewById<TextInputEditText>(R.id.edit_link)
@@ -131,7 +132,7 @@ class ContainerNetworkFragment : BaseFragment() {
         autoCompleteType.setAdapter(typeAdapter)
         autoCompleteType.setText(typeOptions[0], false)
 
-        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        MaterialAlertDialogBuilder(requireContext())
             .setTitle("Add Network Interface")
             .setView(dialogView)
             .setPositiveButton("Add") { _, _ ->
@@ -224,7 +225,7 @@ class ContainerNetworkFragment : BaseFragment() {
         Toast.makeText(requireContext(), "Changes pending", Toast.LENGTH_SHORT).show()
     }
 
-    public fun saveChanges() {
+    fun saveChanges() {
         if (pendingChanges.isEmpty()) {
             Toast.makeText(requireContext(), "No changes to save", Toast.LENGTH_SHORT).show()
             return

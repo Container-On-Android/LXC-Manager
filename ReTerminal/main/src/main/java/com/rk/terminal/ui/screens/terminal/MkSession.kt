@@ -5,6 +5,7 @@ import com.rk.libcommons.createFileIfNot
 import com.rk.libcommons.localBinDir
 import com.rk.libcommons.localLibDir
 import com.rk.libcommons.pendingCommand
+import com.rk.settings.Settings
 import com.rk.terminal.BuildConfig
 import com.rk.terminal.ui.activities.terminal.TerminalActivity
 import com.termux.terminal.TerminalEmulator
@@ -65,7 +66,8 @@ object MkSession {
                 "LINKER=${if(File("/system/bin/linker64").exists()){"/system/bin/linker64"}else{"/system/bin/linker"}}",
                 "PKG=${packageName}",
                 "RISH_APPLICATION_ID=${packageName}",
-                "PKG_PATH=${applicationInfo.sourceDir}"
+                "PKG_PATH=${applicationInfo.sourceDir}",
+                "LXC_DIR=${Settings.lxc_dir}"
             )
 
 

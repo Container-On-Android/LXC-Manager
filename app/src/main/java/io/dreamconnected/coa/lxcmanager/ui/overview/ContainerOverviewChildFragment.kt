@@ -42,7 +42,7 @@ class ContainerOverviewChildFragment : BaseFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         _binding = FragmentContainerOverviewChildBinding.inflate(inflater, container, false)
         arguments?.let { containerName = it.getString("container_name") }
         return binding.root
@@ -158,7 +158,7 @@ class ContainerOverviewChildFragment : BaseFragment() {
         containerName?.let { name ->
             val terminalCommand = TerminalCommand(
                 false, "sh", emptyArray(), "lxc-attach $name", 2, true, "/data/share",
-                arrayOf("PATH=/data/share/bin:/system/bin", "HOME=/data/share", "LXC_CMD=lxc-attach", "LXC_ARG=$name")
+                arrayOf("PATH=/data/share/bin:/system/bin", "HOME=/data/share", "LD_LIBRARY_PATH=/data/share/lib:/system/lib64", "LXC_CMD=lxc-attach", "LXC_ARG=$name")
             )
             launchInternalTerminal(requireContext(), terminalCommand)
         }
@@ -168,7 +168,7 @@ class ContainerOverviewChildFragment : BaseFragment() {
         containerName?.let { name ->
             val terminalCommand = TerminalCommand(
                 false, "sh", emptyArray(), "lxc-console $name", 2, true, "/data/share",
-                arrayOf("PATH=/data/share/bin:/system/bin", "HOME=/data/share", "LXC_CMD=lxc-console", "LXC_ARG=$name")
+                arrayOf("PATH=/data/share/bin:/system/bin", "HOME=/data/share", "LD_LIBRARY_PATH=/data/share/lib:/system/lib64", "LXC_CMD=lxc-console", "LXC_ARG=$name")
             )
             launchInternalTerminal(requireContext(), terminalCommand)
         }
@@ -181,14 +181,12 @@ class ContainerOverviewChildFragment : BaseFragment() {
                     override fun onOutput(output: String?) {
                         output?.let { screenMask.showUniqueTextDialog(requireContext(), "Copy", it) }
                     }
-                    override fun onCommandComplete(code: String?) {
-                        code?.let {
-                            if (it.contains("EXITCODE 0")) {
-                                Toast.makeText(requireContext(), "OK", Toast.LENGTH_LONG).show()
-                                screenMask.dismissUniqueTextDialog("Copy")
-                            } else {
-                                screenMask.dismissUniqueTextDialog("Copy", 5)
-                            }
+                    override fun onCommandComplete(success: Boolean, exitCode: Int, output: String?) {
+                        if (success) {
+                            Toast.makeText(requireContext(), "OK", Toast.LENGTH_LONG).show()
+                            screenMask.dismissUniqueTextDialog("Copy")
+                        } else {
+                            screenMask.dismissUniqueTextDialog("Copy", 5)
                         }
                     }
                 })
@@ -234,9 +232,7 @@ class ContainerOverviewChildFragment : BaseFragment() {
 
             Log.d(TAG, "Captured ${nativeLogs.size} native logs in time range")
 
-            val logs = if (nativeLogs.isNotEmpty()) {
-                nativeLogs
-            } else {
+            val logs = nativeLogs.ifEmpty {
                 val status = if (success) "SUCCESS" else "FAILED"
                 listOf(
                     "Operation: $operationName",
@@ -288,17 +284,21 @@ class ContainerOverviewChildFragment : BaseFragment() {
         val dataCPU = floatArrayOf(0f, 0f, 0f, 0f, 0f)
         val dataMem = floatArrayOf(0f, 0f, 0f, 0f, 0f)
 
-        LxcNetworkChartManager.setLineName1("Mem")
-        LxcNetworkChartManager.setLineName2("CPU")
-        LxcNetworkChartManager.initData(numX, dataCPU, dataMem)
+        LxcCpuMemChartManager.setLineName1("Mem")
+        LxcCpuMemChartManager.setLineName2("CPU")
+        LxcCpuMemChartManager.initData(numX, dataCPU, dataMem)
 
-        val lineData = LxcNetworkChartManager.initDoubleLineChart(lineChart2)
-        LxcNetworkChartManager.initDataStyle(lineChart2, lineData)
+        val lineData = LxcCpuMemChartManager.initDoubleLineChart(lineChart2)
+        LxcCpuMemChartManager.initDataStyle(lineChart2, lineData)
     }
 
     fun onNewData(newValue1: Float, newValue2: Float, lineChart2: LineChart) {
-        LxcNetworkChartManager.addEntry(newValue1, newValue2)
-        LxcNetworkChartManager.updateChartData(lineChart2)
+        Log.d("ContainerOverview", "onNewData: Mem=$newValue1, CPU=$newValue2")
+        requireActivity().runOnUiThread {
+            LxcCpuMemChartManager.addEntry(newValue1, newValue2)
+            LxcCpuMemChartManager.updateChartData(lineChart2)
+            Log.d("ContainerOverview", "onNewData: Chart updated on UI thread")
+        }
     }
 
     override fun onDestroyView() {

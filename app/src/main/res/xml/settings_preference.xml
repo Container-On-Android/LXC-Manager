@@ -55,7 +55,7 @@
     <PreferenceCategory android:title="@string/category_settings_manager">
         <Preference
             app:icon="@drawable/settings_lxc_dir"
-            android:defaultValue="/data/share"
+            android:defaultValue="/data/share/var/lib/lxc"
             app:key="lxc_dir"
             app:title="@string/label_settings_lxc_dir" />
 

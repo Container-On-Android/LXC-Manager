@@ -572,4 +572,7 @@
 
     <color name="log_background_color">#1e1e1e</color>
     <color name="log_text_color">#e0e0e0</color>
+    <color name="warning_container">#FFF8E1</color>
+    <color name="error_container">#FFDAD6</color>
+    <color name="primary_container">#D6E3FF</color>
 </resources>

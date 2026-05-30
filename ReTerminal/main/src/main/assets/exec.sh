@@ -4,10 +4,7 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-echo "dadadhddhadh打电话的好哇"
-
 CURRENT_PATH="./$1"
-
 
 if [ -f "$BIN/$1" ]; then
     EXEC_PATH=$(realpath "$BIN/$1")

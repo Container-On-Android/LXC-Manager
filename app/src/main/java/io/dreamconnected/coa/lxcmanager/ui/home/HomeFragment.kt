@@ -11,9 +11,10 @@ import android.widget.TextView
 import androidx.core.view.MenuProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import io.dreamconnected.coa.lxcmanager.MainActivity
+import com.topjohnwu.superuser.Shell
 import io.dreamconnected.coa.lxcmanager.R
 import io.dreamconnected.coa.lxcmanager.databinding.FragmentHomeBinding
 import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
@@ -21,6 +22,9 @@ import io.dreamconnected.coa.lxcmanager.util.MessageCardManager
 import io.dreamconnected.coa.lxcmanager.util.MessageCardManager.Companion.addMessage
 import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor.execCommandSync
 import io.github.coap.lxc.LxcNative
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class HomeFragment : BaseFragment(), MenuProvider {
@@ -88,6 +92,16 @@ class HomeFragment : BaseFragment(), MenuProvider {
     }
 
     fun setupMessage() {
+        Shell.isAppGrantedRoot()?.let {
+            if (!it) {
+                addMessage("ERROR","Shell Service",
+                    requireContext().getString(R.string.root_grant_err_no_su),"OK") { messageId ->
+                    MessageCardManager.removeMessage(messageId)
+                }
+            }
+        }
+    }
+
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
         menuInflater.inflate(R.menu.menu_home, menu)
     }

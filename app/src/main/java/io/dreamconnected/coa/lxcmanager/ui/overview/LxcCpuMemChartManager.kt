@@ -2,6 +2,7 @@ package io.dreamconnected.coa.lxcmanager.ui.overview
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.util.Log
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.AxisBase
 import com.github.mikephil.charting.components.Legend
@@ -15,12 +16,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class LxcNetworkChartManager {
+class LxcCpuMemChartManager {
     companion object {
         var lineNameOne: String? = null
         var lineNameTwo: String? = null
 
-        // 保存x轴时间和数据
         @SuppressLint("ConstantLocale")
         private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         private val xTimeList = mutableListOf<String>()
@@ -41,8 +41,7 @@ class LxcNetworkChartManager {
                 dataList2.add(initData2[i])
             }
         }
-
-        // 新增：动态更新数据
+        
         fun addEntry(newValue1: Float, newValue2: Float) {
             if (dataList1.size >= maxCount) {
                 dataList1.removeAt(0)
@@ -102,23 +101,31 @@ class LxcNetworkChartManager {
 
         fun updateChartData(mLineChart: LineChart) {
             val lineData = mLineChart.data
+            Log.d("LxcCpuMemChart", "updateChartData: lineData=$lineData, dataSetCount=${lineData?.dataSetCount ?: 0}")
+            Log.d("LxcCpuMemChart", "updateChartData: dataList1 size=${dataList1.size}, dataList2 size=${dataList2.size}")
+            if (dataList1.isNotEmpty()) {
+                Log.d("LxcCpuMemChart", "updateChartData: Last data - Mem=${dataList1.last()}, CPU=${dataList2.last()}")
+            }
+            
             if (lineData != null && lineData.dataSetCount >= 2) {
-                // Mem
+                Log.d("LxcCpuMemChart", "updateChartData: Updating existing chart")
+                
                 val dataSet1 = lineData.getDataSetByIndex(0) as? LineDataSet
                 dataSet1?.let {
                     it.clear()
                     for (i in xTimeList.indices) {
                         it.addEntry(Entry(i.toFloat(), dataList1[i]))
                     }
+                    Log.d("LxcCpuMemChart", "updateChartData: DataSet1 (Mem) entries: ${it.entryCount}")
                 }
                 
-                // CPU
                 val dataSet2 = lineData.getDataSetByIndex(1) as? LineDataSet
                 dataSet2?.let {
                     it.clear()
                     for (i in xTimeList.indices) {
                         it.addEntry(Entry(i.toFloat(), dataList2[i]))
                     }
+                    Log.d("LxcCpuMemChart", "updateChartData: DataSet2 (CPU) entries: ${it.entryCount}")
                 }
                 
                 mLineChart.xAxis.valueFormatter = MyValueFormatter(xTimeList)
@@ -126,7 +133,9 @@ class LxcNetworkChartManager {
                 lineData.notifyDataChanged()
                 mLineChart.notifyDataSetChanged()
                 mLineChart.invalidate()
+                Log.d("LxcCpuMemChart", "updateChartData: Chart invalidated")
             } else {
+                Log.d("LxcCpuMemChart", "updateChartData: Creating new lineData")
                 val newLineData = initDoubleLineChart(mLineChart)
                 initDataStyle(mLineChart, newLineData)
             }
