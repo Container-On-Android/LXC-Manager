@@ -24,6 +24,12 @@
         tools:layout="@layout/fragment_repos" />
 
     <fragment
+        android:id="@+id/navigation_download_manager"
+        android:name="io.dreamconnected.coa.lxcmanager.ui.download.DownloadManagerFragment"
+        android:label="Download Manager"
+        tools:layout="@layout/fragment_download_manager" />
+
+    <fragment
         android:id="@+id/navigation_container_overview"
         android:name="io.dreamconnected.coa.lxcmanager.ui.overview.ContainerOverviewFragment"
         tools:layout="@layout/fragment_container_overview" />

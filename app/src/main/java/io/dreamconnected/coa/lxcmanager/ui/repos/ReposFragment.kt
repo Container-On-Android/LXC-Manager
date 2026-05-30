@@ -1,26 +1,34 @@
 package io.dreamconnected.coa.lxcmanager.ui.repos
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.CollapsingToolbarLayout
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import io.dreamconnected.coa.lxcmanager.R
 import io.dreamconnected.coa.lxcmanager.databinding.FragmentReposBinding
 import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
-import io.dreamconnected.coa.lxcmanager.util.LxcTemplates
-import io.dreamconnected.coa.lxcmanager.util.ScreenMask
+import io.dreamconnected.coa.lxcmanager.ui.download.DownloadViewModel
 
 class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
 
     private var _binding: FragmentReposBinding? = null
     private lateinit var adapter: ImageAdapter
     private lateinit var reposViewModel: ReposViewModel
+    private lateinit var downloadViewModel: DownloadViewModel
 
     private val binding get() = _binding!!
 
@@ -30,6 +38,7 @@ class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
         savedInstanceState: Bundle?
     ): View {
         reposViewModel = ViewModelProvider(this)[ReposViewModel::class.java]
+        downloadViewModel = ViewModelProvider(requireActivity())[DownloadViewModel::class.java]
 
         _binding = FragmentReposBinding.inflate(inflater, container, false)
         val root: View = binding.root
@@ -37,8 +46,11 @@ class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
         setupAppBar(root)
         setupRecyclerView()
         setupObservers()
+        setupFab()
 
         reposViewModel.loadDistributions()
+
+        setHasOptionsMenu(true)
 
         return root
     }
@@ -54,6 +66,13 @@ class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
         recyclerView.layoutManager = LinearLayoutManager(context)
         adapter = ImageAdapter(this)
         recyclerView.adapter = adapter
+    }
+
+    private fun setupFab() {
+        val fab: FloatingActionButton = binding.fabImportRootfs
+        fab.setOnClickListener {
+            selectRootfsFile()
+        }
     }
 
     private fun setupObservers() {
@@ -100,18 +119,79 @@ class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
     }
 
     override fun onImageClick(image: ImageItem) {
-        val fields = mutableListOf(image.distribution, image.release, image.architecture)
-        if (image.variant.isNotEmpty() && image.variant != "default") {
-            fields.add(image.variant)
-        }
-        ScreenMask(requireContext()).showTemplateSelectionDialog(
-            requireContext(),
-            listOf(LxcTemplates("download", fields))
+        showDownloadConfirmDialog(image)
+    }
+
+    private fun showDownloadConfirmDialog(image: ImageItem) {
+        val message = getString(
+            R.string.confirm_download_message,
+            image.distribution,
+            image.release,
+            image.architecture,
+            image.variant
         )
+
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.confirm_download_title)
+            .setMessage(message)
+            .setPositiveButton(R.string.confirm_download) { _, _ ->
+                startDownload(image)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun startDownload(image: ImageItem) {
+        downloadViewModel.addDownload(
+            image.distribution,
+            image.release,
+            image.architecture,
+            image.variant,
+            image.downloadUrl,
+            requireContext()
+        )
+        Snackbar.make(
+            binding.root,
+            "Download started for ${image.distribution} ${image.release}",
+            Snackbar.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun selectRootfsFile() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "*/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+        }
+        startActivityForResult(intent, REQUEST_SELECT_ROOTFS)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.menu_repos, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_download_manager -> {
+                navigateToDownloadManager()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun navigateToDownloadManager() {
+        findNavController().navigate(R.id.navigation_download_manager)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    companion object {
+        private const val REQUEST_SELECT_ROOTFS = 1001
     }
 }

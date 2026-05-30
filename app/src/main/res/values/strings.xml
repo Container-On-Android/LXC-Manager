@@ -68,7 +68,15 @@
 
     <!-- Repos Fragment -->
     <string name="no_images_found">No images found</string>
-    
+    <string name="confirm_download_title">Confirm Download</string>
+    <string name="confirm_download_message">Are you sure you want to download this image?\n\nDistribution: %1$s\nRelease: %2$s\nArchitecture: %3$s\nVariant: %4$s</string>
+    <string name="confirm_download">Download</string>
+    <string name="cancel">Cancel</string>
+    <string name="action_download_manager">Download Manager</string>
+    <string name="action_import_rootfs">Import Rootfs</string>
+    <string name="title_download_manager">Download Manager</string>
+    <string name="no_downloads_yet">No downloads yet</string>
+
     <!-- Log Viewer Dialog -->
     <string name="log_viewer_title">LXC Logs - %s</string>
     <string name="close">Close</string>

@@ -5,5 +5,6 @@ data class ImageItem(
     val release: String,
     val architecture: String,
     val variant: String,
-    val fullPath: String
+    val fullPath: String,
+    val downloadUrl: String
 )

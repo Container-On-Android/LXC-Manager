@@ -19,7 +19,7 @@ android {
         applicationId = "io.dreamconnected.coa.lxcmanager"
         minSdk = 28
         //noinspection ExpiredTargetSdkVersion
-        targetSdk = 28
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -73,6 +73,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation("com.google.code.gson:gson:2.14.0")
+    implementation("org.apache.commons:commons-compress:1.28.0")
+    implementation("org.tukaani:xz:1.12")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

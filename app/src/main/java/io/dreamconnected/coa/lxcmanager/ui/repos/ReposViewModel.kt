@@ -117,10 +117,11 @@ class ReposViewModel : ViewModel() {
                     while (reader.readLine().also { line = it } != null) {
                         line?.let {
                             val parts = it.split(";")
-                            if (parts.size >= 4 && parts[0] == distribution) {
+                            if (parts.size >= 6 && parts[0] == distribution) {
                                 val release = parts[1]
                                 val arch = parts[2]
                                 val variant = parts[3]
+                                val downloadUrl = parts[5]
                                 val fullPath = "$distribution/$release/$arch/$variant"
                                 imageList.add(
                                     ImageItem(
@@ -128,7 +129,8 @@ class ReposViewModel : ViewModel() {
                                         release = release,
                                         architecture = arch,
                                         variant = variant,
-                                        fullPath = fullPath
+                                        fullPath = fullPath,
+                                        downloadUrl = downloadUrl
                                     )
                                 )
                             }
