@@ -90,4 +90,5 @@ dependencies {
     implementation(project(":ReTerminal:main"))
     implementation(project(":ReTerminal:resources"))
     implementation(project(":ReTerminal:rish"))
+    implementation(project(":jni-lxc"))
 }

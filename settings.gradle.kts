@@ -31,5 +31,6 @@ include(
     ":ReTerminal:components",
     ":ReTerminal:main",
     ":ReTerminal:resources",
-    ":ReTerminal:rish"
+    ":ReTerminal:rish",
+    ":jni-lxc"
 )

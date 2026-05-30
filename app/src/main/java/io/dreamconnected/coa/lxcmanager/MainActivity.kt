@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
-import android.os.RemoteException
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -17,21 +16,21 @@ import com.topjohnwu.superuser.ipc.RootService
 import io.dreamconnected.coa.lxcmanager.databinding.ActivityMainBinding
 import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
 import io.dreamconnected.coa.lxcmanager.util.ThemeUtil
-import io.github.coap.IService
+import io.github.coap.ILxc
 import io.github.coap.lxc.LxcManager
 import io.github.coap.lxc.LxcNative
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private var lxcService: IService? = null
+    private var lxcService: ILxc? = null
     private var lxcManager: LxcManager? = null
     private var isServiceBound = false
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
             Log.d(TAG, "LXC Service connected")
-            lxcService = IService.Stub.asInterface(service)
+            lxcService = ILxc.Stub.asInterface(service)
             initLxcManager()
         }
 

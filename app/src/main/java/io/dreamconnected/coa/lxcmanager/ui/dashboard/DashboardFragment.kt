@@ -15,7 +15,6 @@ import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
 import io.dreamconnected.coa.lxcmanager.ui.dashboard.ItemAdapter.OnItemClickListener
 import io.dreamconnected.coa.lxcmanager.util.LxcTemplates
 import io.dreamconnected.coa.lxcmanager.util.ScreenMask
-import io.github.coap.lxc.LxcManager
 
 class DashboardFragment : BaseFragment(),OnItemClickListener {
 

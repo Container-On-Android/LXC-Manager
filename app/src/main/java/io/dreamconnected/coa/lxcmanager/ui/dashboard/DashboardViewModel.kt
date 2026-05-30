@@ -44,10 +44,10 @@ class DashboardViewModel : ViewModel() {
     private fun containerToItem(container: LxcContainer): Item {
         val name = container.name
         val state = container.state
-        val autostart = container.getConfigItem("lxc.start.auto") ?: "false"
-        val groups = "default"
-        val ipv4 = container.getConfigItem("lxc.net.0.ipv4.address") ?: ""
-        val ipv6 = container.getConfigItem("lxc.net.0.ipv6.address") ?: ""
+        val autostart = container.getConfigItem("lxc.start.auto") ?: "NULL"
+        val groups = container.getConfigItem("lxc.group") ?: "default"
+        val ipv4 = getAddresses(container, "inet")
+        val ipv6 = getAddresses(container, "inet6")
         val unprivileged = container.getConfigItem("lxc.idmap")?.let { "true" } ?: "false"
 
         return Item(
@@ -59,5 +59,20 @@ class DashboardViewModel : ViewModel() {
             ipv6 = ipv6,
             unprivileged = unprivileged
         )
+    }
+
+    private fun getAddresses(container: LxcContainer, family: String): String {
+        val interfaces = container.interfaces
+        val addresses = mutableListOf<String>()
+        for (iface in interfaces) {
+            val ips = container.getIps(iface, family, 0)
+            for (ip in ips) {
+                val isLoopback = if (family == "inet") ip.startsWith("127.") else ip == "::1"
+                if (ip.isNotEmpty() && !isLoopback && !addresses.contains(ip)) {
+                    addresses.add(ip)
+                }
+            }
+        }
+        return addresses.joinToString(", ")
     }
 }
