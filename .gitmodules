@@ -1,0 +1,4 @@
+[submodule "jni-lxc"]
+	path = jni-lxc
+	url = https://github.com/Container-On-Android/jni-lxc
+	branch = dev
