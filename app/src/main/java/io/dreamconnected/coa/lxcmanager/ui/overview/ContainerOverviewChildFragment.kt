@@ -16,8 +16,6 @@ import io.dreamconnected.coa.lxcmanager.MainActivity
 import io.dreamconnected.coa.lxcmanager.R
 import io.dreamconnected.coa.lxcmanager.databinding.FragmentContainerOverviewChildBinding
 import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
-import io.dreamconnected.coa.lxcmanager.ui.common.LogViewerDialog
-import io.dreamconnected.coa.lxcmanager.util.LogcatCapture
 import io.dreamconnected.coa.lxcmanager.util.ScreenMask
 import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
 import io.github.coap.lxc.LxcContainer
@@ -28,7 +26,6 @@ import kotlinx.coroutines.launch
 class ContainerOverviewChildFragment : BaseFragment() {
 
     private val TAG = "ContainerOverviewChildFragment"
-    private val LXC_NATIVE_TAG = "lxc"
 
     private var _binding: FragmentContainerOverviewChildBinding? = null
     private val binding get() = _binding!!
@@ -36,7 +33,6 @@ class ContainerOverviewChildFragment : BaseFragment() {
     private var statusMonitor: ContainerStatusMonitor? = null
     private var isFreeze = false
     private var lxcManager: LxcManager? = null
-    private var logcatCapture: LogcatCapture? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -58,7 +54,6 @@ class ContainerOverviewChildFragment : BaseFragment() {
         containerName?.let { name ->
             lxcManager = (requireActivity() as MainActivity).getLxcManager()
             statusMonitor = ContainerStatusMonitor(lxcManager, name)
-            logcatCapture = LogcatCapture(LXC_NATIVE_TAG)
 
             lifecycleScope.launch {
                 statusMonitor?.statusFlow?.collectLatest { containerStatus ->
@@ -143,12 +138,25 @@ class ContainerOverviewChildFragment : BaseFragment() {
     private fun handleFreezeClick(screenMask: ScreenMask) {
         screenMask.show()
         containerName?.let { name ->
-            performContainerOperation(name, "freeze/unfreeze") { container ->
-                if (isFreeze) {
-                    container.unfreeze()
-                } else {
-                    container.freeze()
-                }
+            val container = lxcManager?.getContainer(name)
+            if (container == null) {
+                Log.e(TAG, "Container '$name' not found")
+                screenMask.dismiss()
+                return
+            }
+
+            val success = if (isFreeze) {
+                container.unfreeze()
+            } else {
+                container.freeze()
+            }
+
+            if (success) {
+                Log.d(TAG, "Successfully ${if (isFreeze) "unfreeze" else "freeze"} container '$name'")
+                Toast.makeText(requireContext(), "Operation successful", Toast.LENGTH_SHORT).show()
+            } else {
+                Log.e(TAG, "Failed to ${if (isFreeze) "unfreeze" else "freeze"} container '$name'")
+                Toast.makeText(requireContext(), "Operation failed", Toast.LENGTH_SHORT).show()
             }
         }
         screenMask.dismiss()
@@ -198,79 +206,46 @@ class ContainerOverviewChildFragment : BaseFragment() {
 
     private fun handleDestroyClick() {
         containerName?.let { name ->
-            performContainerOperation(name, "destroy") { container ->
-                container.destroy()
+            val container = lxcManager?.getContainer(name)
+            if (container == null) {
+                Log.e(TAG, "Container '$name' not found")
+                Toast.makeText(requireContext(), "Container not found", Toast.LENGTH_SHORT).show()
+                return
             }
-        }
-    }
 
-    private inline fun performContainerOperation(
-        containerName: String,
-        operationName: String,
-        operation: (LxcContainer) -> Boolean
-    ) {
-        val container = lxcManager?.getContainer(containerName)
-        if (container == null) {
-            Log.e(TAG, "Failed to $operationName container '$containerName': container not found")
-            return
-        }
-
-        Log.d(TAG, "Starting operation: $operationName")
-        val startTime = System.currentTimeMillis()
-
-        val success = operation(container)
-
-        val endTime = System.currentTimeMillis()
-        Log.d(TAG, "Operation completed in ${endTime - startTime}ms")
-
-        logcatCapture?.captureLogs(startTime, endTime) { nativeLogs ->
+            val success = container.destroy()
             if (success) {
-                Log.d(TAG, "Successfully $operationName container '$containerName'")
+                Log.d(TAG, "Successfully destroyed container '$name'")
+                Toast.makeText(requireContext(), "Container destroyed", Toast.LENGTH_SHORT).show()
             } else {
-                Log.e(TAG, "Failed to $operationName container '$containerName'")
+                Log.e(TAG, "Failed to destroy container '$name'")
+                Toast.makeText(requireContext(), "Failed to destroy container", Toast.LENGTH_SHORT).show()
             }
-
-            Log.d(TAG, "Captured ${nativeLogs.size} native logs in time range")
-
-            val logs = nativeLogs.ifEmpty {
-                val status = if (success) "SUCCESS" else "FAILED"
-                listOf(
-                    "Operation: $operationName",
-                    "Container: $containerName",
-                    "Status: $status",
-                    "Duration: ${endTime - startTime}ms",
-                    "",
-                    "Note: Check Android Studio Logcat for detailed LXC logs"
-                )
-            }
-
-            showLogViewerDialog(logs, operationName)
         }
-    }
-
-    private fun showLogViewerDialog(logs: List<String>, operationName: String) {
-        LogViewerDialog.show(requireContext(), logs, operationName)
     }
 
     private fun handleStatusSwitchClick(statusBar: MaterialSwitch, screenMask: ScreenMask) {
         screenMask.show()
-        when (statusBar.text) {
-            getString(R.string.co_container_status_started) -> {
-                containerName?.let { name ->
-                    performContainerOperation(name, "stop") { container ->
-                        container.stop()
-                    }
-                }
+        containerName?.let { name ->
+            val container = lxcManager?.getContainer(name)
+            if (container == null) {
+                Log.e(TAG, "Container '$name' not found")
+                screenMask.dismiss()
+                return@let
             }
-            getString(R.string.co_container_status_stopped) -> {
-                containerName?.let { name ->
-                    performContainerOperation(name, "start") { container ->
-                        container.start()
-                    }
-                }
+
+            val success = when (statusBar.text) {
+                getString(R.string.co_container_status_started) -> container.stop()
+                getString(R.string.co_container_status_stopped) -> container.start()
+                else -> false
             }
-            else -> {
-                Toast.makeText(requireContext(), "This toast shouldn't be there. It's a bug.", Toast.LENGTH_LONG).show()
+
+            if (success) {
+                Log.d(TAG, "Successfully changed container status for '$name'")
+                Toast.makeText(requireContext(), "Status changed", Toast.LENGTH_SHORT).show()
+            } else {
+                Log.e(TAG, "Failed to change container status for '$name'")
+                Toast.makeText(requireContext(), "Failed to change status", Toast.LENGTH_SHORT).show()
             }
         }
         screenMask.dismiss()
@@ -304,7 +279,6 @@ class ContainerOverviewChildFragment : BaseFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         statusMonitor?.stopMonitoring()
-        logcatCapture?.shutdown()
         _binding = null
     }
 }

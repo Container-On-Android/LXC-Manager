@@ -17,6 +17,11 @@
         android:title="@string/title_repos" />
 
     <item
+        android:id="@+id/navigation_logs"
+        android:icon="@drawable/ic_logs_black_24dp"
+        android:title="@string/title_logs" />
+
+    <item
         android:id="@+id/navigation_settings"
         android:icon="@drawable/ic_settings_black_24dp"
         android:title="@string/title_settings" />

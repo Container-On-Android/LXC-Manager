@@ -575,4 +575,8 @@
     <color name="warning_container">#FFF8E1</color>
     <color name="error_container">#FFDAD6</color>
     <color name="primary_container">#D6E3FF</color>
+
+    <color name="log_info_background">#2196F3</color>
+    <color name="log_warn_background">#FFC107</color>
+    <color name="log_error_background">#F44336</color>
 </resources>
