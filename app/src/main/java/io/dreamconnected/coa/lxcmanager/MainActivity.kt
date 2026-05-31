@@ -12,6 +12,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI
 import androidx.preference.PreferenceManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.navigationrail.NavigationRailView
 import com.topjohnwu.superuser.ipc.RootService
 import io.dreamconnected.coa.lxcmanager.databinding.ActivityMainBinding
 import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
@@ -52,9 +53,12 @@ class MainActivity : AppCompatActivity() {
 
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main) as NavHostFragment
         val navController = navHostFragment.navController
-        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.nav_view)
         val fragmentTransaction = supportFragmentManager.beginTransaction()
-        NavigationUI.setupWithNavController(bottomNavigationView, navController)
+
+        when (val navView = findViewById<View>(R.id.nav_view)) {
+            is BottomNavigationView -> NavigationUI.setupWithNavController(navView, navController)
+            is NavigationRailView -> NavigationUI.setupWithNavController(navView, navController)
+        }
 
         fragmentTransaction.setCustomAnimations(
             R.anim.fragment_enter,
@@ -104,13 +108,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun hideBottomNavigation() {
-        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.nav_view)
-        bottomNavigationView.visibility = View.GONE
+        binding.navView.visibility = View.GONE
     }
 
     fun showBottomNavigation() {
-        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.nav_view)
-        bottomNavigationView.visibility = View.VISIBLE
+        binding.navView.visibility = View.VISIBLE
     }
 
     companion object {
