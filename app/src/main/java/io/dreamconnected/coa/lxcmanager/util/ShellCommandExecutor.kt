@@ -23,10 +23,8 @@ object ShellCommandExecutor {
     fun initialize(context: Context) {
         if (appContext != null) return
         appContext = context.applicationContext
-        Shell.setDefaultBuilder(
-            Shell.Builder.create()
-                .setFlags(Shell.FLAG_REDIRECT_STDERR)
-        )
+        Shell.setDefaultBuilder(Shell.Builder.create())
+        Shell.enableLegacyStderrRedirection = true
     }
 
     private fun buildEnvironmentCommands(): List<String> {

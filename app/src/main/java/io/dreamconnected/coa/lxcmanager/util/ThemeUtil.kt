@@ -28,7 +28,7 @@ object ThemeUtil {
         layoutParams.layoutInDisplayCutoutMode =
             WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         activity.window.attributes = layoutParams
-        var dynamicColors = sharedPreferences?.getBoolean("dynamicColors",false)
+        val dynamicColors = sharedPreferences?.getBoolean("dynamicColors",false)
         if (dynamicColors == true) {
             DynamicColors.applyToActivitiesIfAvailable(activity.application)
         } else {
@@ -47,8 +47,8 @@ object ThemeUtil {
         layoutParams.layoutInDisplayCutoutMode =
             WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         activity.window.attributes = layoutParams
-        var themeName = sharedPreferences?.getString("customColors","AppTheme.Blue")
-        var dynamicColors = sharedPreferences?.getBoolean("dynamicColors",false)
+        val themeName = sharedPreferences?.getString("customColors","AppTheme.Blue")
+        val dynamicColors = sharedPreferences?.getBoolean("dynamicColors",false)
         if (dynamicColors == true) {
             DynamicColors.applyToActivitiesIfAvailable(activity.application)
         } else {
@@ -68,7 +68,7 @@ object ThemeUtil {
 
     fun setUpDarkMode(context: Context?) {
         val sharedPreferences = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
-        var darkmode = sharedPreferences?.getString("theme_darkmode","SYSTEM")
+        val darkmode = sharedPreferences?.getString("theme_darkmode","SYSTEM")
         when (darkmode) {
             "ALWAYS" -> {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)

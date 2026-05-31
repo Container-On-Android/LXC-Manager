@@ -3,7 +3,6 @@ package io.dreamconnected.coa.lxcmanager.util
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.Toast
@@ -139,7 +138,7 @@ class ScreenMask(private val context: Context) {
                 MaterialAlertDialogBuilder(context)
                     .setTitle("${selectedTemplate.name} 填写")
                     .setView(inputLayoutContainer)
-                    .setPositiveButton("确认") { dialog, _ ->
+                    .setPositiveButton("确认") { _, _ ->
                         val commandParts = mutableListOf<String>()
 
                         val containerName = nameEditText.text.toString()
@@ -189,13 +188,4 @@ class ScreenMask(private val context: Context) {
             .show()
     }
 
-    fun showDebugDialog(context: Context, title: String, message: String, onConfirm: () -> Unit) {
-        MaterialAlertDialogBuilder(context)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton("OK") { _, _ ->
-                onConfirm()
-            }
-            .show()
-    }
 }

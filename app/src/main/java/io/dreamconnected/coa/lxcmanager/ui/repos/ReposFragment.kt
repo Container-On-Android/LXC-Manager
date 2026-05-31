@@ -1,6 +1,5 @@
 package io.dreamconnected.coa.lxcmanager.ui.repos
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -10,7 +9,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.MenuProvider
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -32,12 +35,18 @@ class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
 
     private val binding get() = _binding!!
 
+    private val pickContentLauncher = registerForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { handleSelectedFile(it) }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        reposViewModel = ViewModelProvider(this)[ReposViewModel::class.java]
+        reposViewModel = ViewModelProvider(this, ReposViewModelFactory(requireActivity().application))[ReposViewModel::class.java]
         downloadViewModel = ViewModelProvider(requireActivity())[DownloadViewModel::class.java]
 
         _binding = FragmentReposBinding.inflate(inflater, container, false)
@@ -50,9 +59,35 @@ class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
 
         reposViewModel.loadDistributions()
 
-        setHasOptionsMenu(true)
+        setupMenu()
 
         return root
+    }
+
+    private fun setupMenu() {
+        requireActivity().addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                menuInflater.inflate(R.menu.menu_repos, menu)
+            }
+
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                return when (menuItem.itemId) {
+                    R.id.action_download_manager -> {
+                        navigateToDownloadManager()
+                        true
+                    }
+                    else -> false
+                }
+            }
+        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    }
+
+    private fun handleSelectedFile(uri: android.net.Uri) {
+        Snackbar.make(
+            binding.root,
+            "Selected file: ${uri.lastPathSegment}",
+            Snackbar.LENGTH_SHORT
+        ).show()
     }
 
     override fun setupAppBar(binding: View) {
@@ -158,28 +193,9 @@ class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
     }
 
     private fun selectRootfsFile() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-            type = "*/*"
-            addCategory(Intent.CATEGORY_OPENABLE)
-        }
-        startActivityForResult(intent, REQUEST_SELECT_ROOTFS)
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.menu_repos, menu)
-        super.onCreateOptionsMenu(menu, inflater)
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_download_manager -> {
-                navigateToDownloadManager()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
+        pickContentLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.SingleMimeType("*/*"))
+        )
     }
 
     private fun navigateToDownloadManager() {
@@ -189,9 +205,5 @@ class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    companion object {
-        private const val REQUEST_SELECT_ROOTFS = 1001
     }
 }
