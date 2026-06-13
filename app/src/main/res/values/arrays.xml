@@ -13,27 +13,21 @@
     </string-array>
 
     <string-array name="log_level_entries">
+        <item>VERBOSE</item>
+        <item>DEBUG</item>
+        <item>INFO</item>
         <item>WARN</item>
         <item>ERROR</item>
-        <item>NOTICE</item>
-        <item>INFO</item>
-        <item>DEBUG</item>
-        <item>TRACE</item>
         <item>FATAL</item>
-        <item>ALERT</item>
-        <item>CRIT</item>
     </string-array>
 
     <string-array name="log_level_values">
+        <item>verbose</item>
+        <item>debug</item>
+        <item>info</item>
         <item>warn</item>
         <item>error</item>
-        <item>notice</item>
-        <item>info</item>
-        <item>debug</item>
-        <item>trace</item>
         <item>fatal</item>
-        <item>alert</item>
-        <item>crit</item>
     </string-array>
 
     <string-array name="log_retention_entries" >

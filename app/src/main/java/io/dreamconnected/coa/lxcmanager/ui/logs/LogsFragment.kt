@@ -46,7 +46,7 @@ class LogsFragment : BaseFragment() {
         _binding = null
     }
 
-    private inner class ViewPagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
+    private class ViewPagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
         override fun getItemCount(): Int = 2
 
         override fun createFragment(position: Int): Fragment {
