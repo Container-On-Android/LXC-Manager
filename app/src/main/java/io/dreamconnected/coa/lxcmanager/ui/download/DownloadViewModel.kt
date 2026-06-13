@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.preference.PreferenceManager
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.dreamconnected.coa.lxcmanager.R
@@ -28,9 +29,14 @@ import java.util.Random
 class DownloadViewModel : ViewModel() {
 
     private val TAG = "DownloadViewModel"
-    private val BASE_URL = "https://images.linuxcontainers.org"
     private val PREFS_NAME = "download_prefs"
     private val DOWNLOADS_KEY = "downloads"
+
+    private fun getBaseUrl(context: Context): String {
+        val mirror = PreferenceManager.getDefaultSharedPreferences(context)
+            .getString("repo_mirror", "images.linuxcontainers.org") ?: "images.linuxcontainers.org"
+        return "https://$mirror"
+    }
     
     private lateinit var prefs: SharedPreferences
     private val gson = Gson()
@@ -132,7 +138,7 @@ class DownloadViewModel : ViewModel() {
                 val fullUrl = if (item.downloadUrl.startsWith("http")) {
                     item.downloadUrl
                 } else {
-                    "$BASE_URL${item.downloadUrl}rootfs.tar.xz"
+                    "${getBaseUrl(context)}${item.downloadUrl}rootfs.tar.xz"
                 }
                 val url = URL(fullUrl)
                 val connection = url.openConnection() as HttpURLConnection
@@ -215,12 +221,29 @@ class DownloadViewModel : ViewModel() {
         }
     }
 
-    fun deleteDownload(id: Long) {
+    fun deleteDownload(item: DownloadItem, context: Context) {
         if (!::prefs.isInitialized) {
             return
         }
-        
-        removeDownloadItem(id)
+
+        try {
+            val file = File(item.localPath)
+            if (file.exists()) {
+                file.delete()
+            }
+
+            val cacheDir = File(
+                getDownloadDirectory(context) +
+                    "/cache/${item.distribution}/${item.release}/${item.architecture}/${item.variant}"
+            )
+            if (cacheDir.exists()) {
+                cacheDir.deleteRecursively()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete files for download: ${item.id}", e)
+        }
+
+        removeDownloadItem(item.id)
     }
 
     private fun getDownloadDirectory(context: Context): String {
@@ -246,7 +269,7 @@ class DownloadViewModel : ViewModel() {
                 val metaUrl = if (item.downloadUrl.startsWith("http")) {
                     item.downloadUrl.replace("rootfs.tar.xz", "meta.tar.xz")
                 } else {
-                    "$BASE_URL${item.downloadUrl}meta.tar.xz"
+                    "${getBaseUrl(context)}${item.downloadUrl}meta.tar.xz"
                 }
                 val metaFile = File(cachePath, "meta.tar.xz")
 
@@ -270,6 +293,8 @@ class DownloadViewModel : ViewModel() {
 
                 val createDevPtsCmd = "mkdir -p $rootfsPath/dev/pts"
                 ShellCommandExecutor.execCommandSync(createDevPtsCmd)
+
+                processTemplateFiles(rootfsPath, cachePath, containerName)
 
                 postExtractSetup(containerPath, rootfsPath)
 
@@ -326,6 +351,34 @@ class DownloadViewModel : ViewModel() {
     private fun postExtractSetup(containerPath: String, rootfsPath: String) {
         if (File("$rootfsPath/etc/init/tty.conf").exists()) {
             ShellCommandExecutor.execCommandSync("sed -i 's|mingetty|mingetty --nohangup|' ${rootfsPath}/etc/init/tty.conf")
+        }
+    }
+
+    private fun processTemplateFiles(rootfsPath: String, cachePath: String, containerName: String) {
+        val templatesFile = File(cachePath, "templates")
+        if (!templatesFile.exists()) {
+            return
+        }
+
+        val content = ShellCommandExecutor.execCommandSync("cat '${templatesFile.absolutePath}'")
+        if (content.isBlank()) {
+            return
+        }
+
+        for (rawPath in content.split("\n")) {
+            val path = rawPath.trim()
+            if (path.isEmpty()) {
+                continue
+            }
+            val target = File("$rootfsPath$path")
+            if (!target.exists()) {
+                Log.w(TAG, "Template target does not exist: ${target.absolutePath}")
+                continue
+            }
+            val escaped = target.absolutePath.replace("'", "'\\''")
+            ShellCommandExecutor.execCommandSync(
+                "if [ -f '$escaped' ]; then sed -i 's/LXC_NAME/${containerName.replace("/", "\\/")}/g' '$escaped'; fi"
+            )
         }
     }
 

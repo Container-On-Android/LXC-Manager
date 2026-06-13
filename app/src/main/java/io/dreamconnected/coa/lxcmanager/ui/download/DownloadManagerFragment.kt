@@ -212,7 +212,7 @@ class DownloadManagerFragment : BaseFragment(), DownloadAdapter.DownloadItemClic
             .setTitle("Delete Download")
             .setMessage("Are you sure you want to delete this download?")
             .setPositiveButton("Delete") { _, _ ->
-                downloadViewModel.deleteDownload(item.id)
+                downloadViewModel.deleteDownload(item, requireContext())
             }
             .setNegativeButton("Cancel", null)
             .show()

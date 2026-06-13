@@ -7,8 +7,6 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -21,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import io.dreamconnected.coa.lxcmanager.R
 import io.dreamconnected.coa.lxcmanager.databinding.FragmentReposBinding
 import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
@@ -32,6 +31,9 @@ class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
     private lateinit var adapter: ImageAdapter
     private lateinit var reposViewModel: ReposViewModel
     private lateinit var downloadViewModel: DownloadViewModel
+    private var isSettingSelection = false
+    private var lastDistributions: List<String> = emptyList()
+    private var lastArchitectures: List<String>? = null
 
     private val binding get() = _binding!!
 
@@ -115,6 +117,18 @@ class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
             setupDistributionSpinner(distributions)
         }
 
+        reposViewModel.architectures.observe(viewLifecycleOwner) { architectures ->
+            setupArchSpinner(architectures)
+        }
+
+        reposViewModel.selectedDistribution.observe(viewLifecycleOwner) { _ ->
+            val currentArchs = reposViewModel.architectures.value
+            if (currentArchs != null) {
+                lastArchitectures = null
+                setupArchSpinner(currentArchs)
+            }
+        }
+
         reposViewModel.images.observe(viewLifecycleOwner) { images ->
             adapter.submitList(images)
             binding.textError.visibility = if (images.isEmpty() && reposViewModel.error.value == null) View.VISIBLE else View.GONE
@@ -138,18 +152,63 @@ class ReposFragment : BaseFragment(), ImageAdapter.OnImageClickListener {
     }
 
     private fun setupDistributionSpinner(distributions: List<String>) {
-        val spinner = binding.spinnerDistribution
-        val arrayAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, distributions)
-        arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinner.adapter = arrayAdapter
+        if (distributions == lastDistributions) return
+        lastDistributions = distributions
 
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val selected = distributions[position]
-                reposViewModel.loadImages(selected)
+        val dropdown: MaterialAutoCompleteTextView = binding.spinnerDistribution
+        dropdown.setSimpleItems(distributions.toTypedArray())
+
+        val savedDist = reposViewModel.selectedDistribution.value
+        val currentText = dropdown.text?.toString()
+        val currentIndex = when {
+            savedDist != null && distributions.contains(savedDist) -> distributions.indexOf(savedDist)
+            !currentText.isNullOrBlank() && distributions.contains(currentText) -> distributions.indexOf(currentText)
+            else -> 0
+        }
+
+        isSettingSelection = true
+        dropdown.setText(distributions.getOrNull(currentIndex).orEmpty(), false)
+        isSettingSelection = false
+
+        dropdown.setOnItemClickListener { _, _, position, _ ->
+            if (isSettingSelection) return@setOnItemClickListener
+            val selected = distributions[position]
+            val arch = binding.spinnerArch.text?.toString()
+            if (arch.isNullOrBlank().not()) {
+                reposViewModel.loadImages(selected, arch)
             }
+        }
+    }
 
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+    private fun setupArchSpinner(architectures: List<String>) {
+        if (architectures == lastArchitectures) return
+        lastArchitectures = architectures
+
+        val dropdown: MaterialAutoCompleteTextView = binding.spinnerArch
+        dropdown.setSimpleItems(architectures.toTypedArray())
+        
+        val savedArch = reposViewModel.selectedArchitecture.value
+        val currentText = dropdown.text?.toString()
+        val currentIndex = when {
+            savedArch != null && architectures.contains(savedArch) -> architectures.indexOf(savedArch)
+            !currentText.isNullOrBlank() && architectures.contains(currentText) -> architectures.indexOf(currentText)
+            else -> {
+                val arm64Index = architectures.indexOf("arm64")
+                if (arm64Index >= 0) arm64Index else 0
+            }
+        }
+
+        isSettingSelection = true
+        dropdown.setText(architectures.getOrNull(currentIndex).orEmpty(), false)
+        isSettingSelection = false
+
+        dropdown.setOnItemClickListener { _, _, position, _ ->
+            if (isSettingSelection) return@setOnItemClickListener
+            val arch = architectures[position]
+            val dist = binding.spinnerDistribution.text?.toString()
+            if (!dist.isNullOrBlank()) {
+                reposViewModel.filterByArchitecture(arch)
+            }
         }
     }
 

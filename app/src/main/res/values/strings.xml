@@ -55,6 +55,8 @@
     <string name="category_settings_network">Network</string>
     <string name="label_settings_doh">DoH</string>
     <string name="summary_settings_doh">DoH</string>
+    <string name="label_settings_repo_mirror">Images mirror</string>
+    <string name="summary_settings_repo_mirror">Custom images.linuxcontainers.org mirror</string>
     <string name="category_settings_ui">UI</string>
     <string name="label_settings_language">Language</string>
     <string name="category_settings_theme">Theme</string>

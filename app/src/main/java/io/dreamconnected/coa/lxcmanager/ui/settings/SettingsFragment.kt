@@ -104,6 +104,11 @@ open class SettingsFragment : BaseFragment() {
                 showLxcDirDialog()
                 true
             }
+
+            findPreference<Preference>("repo_mirror")?.setOnPreferenceClickListener {
+                showRepoMirrorDialog()
+                true
+            }
         }
 
         private fun showLxcDirDialog() {
@@ -131,6 +136,41 @@ open class SettingsFragment : BaseFragment() {
                 .setPositiveButton(android.R.string.ok) { _, _ ->
                     val newPath = editText.text.toString().ifBlank { "/data/share/var/lib/lxc" }
                     sharedPreferences.edit { putString("lxc_dir", newPath) }
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
+
+        private fun showRepoMirrorDialog() {
+            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            val currentMirror = sharedPreferences.getString("repo_mirror", "images.linuxcontainers.org") ?: "images.linuxcontainers.org"
+
+            val styledContext = ContextThemeWrapper(
+                requireContext(),
+                com.google.android.material.R.style.Widget_Material3_TextInputLayout_FilledBox
+            )
+
+            val editText = TextInputEditText(styledContext).apply {
+                setText(currentMirror)
+                hint = "images.linuxcontainers.org"
+            }
+
+            val textInputLayout = TextInputLayout(styledContext).apply {
+                setPadding(48, 32, 48, 32)
+                addView(editText)
+            }
+
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.label_settings_repo_mirror)
+                .setView(textInputLayout)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    val newMirror = editText.text.toString().trim().ifBlank { "images.linuxcontainers.org" }
+                    if (newMirror != currentMirror) {
+                        sharedPreferences.edit { putString("repo_mirror", newMirror) }
+                        // clear cache, for next refuse.
+                        requireContext().getSharedPreferences("repos_cache", android.content.Context.MODE_PRIVATE)
+                            .edit { clear() }
+                    }
                 }
                 .setNegativeButton(android.R.string.cancel, null)
                 .show()

@@ -9,6 +9,12 @@
             app:icon="@drawable/settings_network_doh"
             app:summary="@string/summary_settings_doh"
             app:title="@string/label_settings_doh" />
+        <Preference
+            app:defaultValue="images.linuxcontainers.org"
+            app:icon="@drawable/settings_network_lxc_images_mirror"
+            app:key="repo_mirror"
+            app:summary="@string/summary_settings_repo_mirror"
+            app:title="@string/label_settings_repo_mirror" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/category_settings_ui">
