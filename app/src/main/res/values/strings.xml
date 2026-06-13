@@ -48,7 +48,7 @@
     <string name="lxc_destroy">Destroy</string>
     <string name="lxc_start">Start</string>
     <string name="co_container_status_frozen">Frozen</string>
-    <string name="co_container_status_started">Started</string>
+    <string name="co_container_status_started">Running</string>
     <string name="co_container_status_stopped">Stopped</string>
 
     <!-- Shared Settings -->

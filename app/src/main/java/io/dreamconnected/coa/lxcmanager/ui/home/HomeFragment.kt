@@ -65,21 +65,23 @@ class HomeFragment : BaseFragment(), MenuProvider {
         val version = LxcNative.getVersion()
         binding.lxcVer.text = version ?: "Null"
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             val mountOutput = execCommandSync("mount | grep cgroup")
             val cgrouprcOutput = execCommandSync("strings /dev/cgroup_info/cgroup.rc")
             val cgroupsjsonOutput = execCommandSync("cat /system/etc/cgroups.json")
 
             withContext(Dispatchers.Main) {
-                binding.deviceCgroup.text = buildString {
-                    appendLine("=== Mount (cgroup) ===")
-                    appendLine(mountOutput)
-                    appendLine()
-                    appendLine("=== cgroup.rc ===")
-                    appendLine(cgrouprcOutput)
-                    appendLine()
-                    appendLine("=== cgroups.json ===")
-                    appendLine(cgroupsjsonOutput)
+                _binding?.let { binding ->
+                    binding.deviceCgroup.text = buildString {
+                        appendLine("=== Mount (cgroup) ===")
+                        appendLine(mountOutput)
+                        appendLine()
+                        appendLine("=== cgroup.rc ===")
+                        appendLine(cgrouprcOutput)
+                        appendLine()
+                        appendLine("=== cgroups.json ===")
+                        appendLine(cgroupsjsonOutput)
+                    }
                 }
             }
         }

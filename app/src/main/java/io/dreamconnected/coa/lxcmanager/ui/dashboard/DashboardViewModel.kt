@@ -4,8 +4,14 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import io.github.coap.lxc.LxcContainer
 import io.github.coap.lxc.LxcManager
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicInteger
 
 class DashboardViewModel : ViewModel() {
@@ -14,30 +20,62 @@ class DashboardViewModel : ViewModel() {
     val items: LiveData<MutableList<Item>> = _items
     private val refreshCounter = AtomicInteger(0)
     private var lxcManager: LxcManager? = null
+    private var refreshJob: Job? = null
 
     fun setLxcManager(manager: LxcManager?) {
         this.lxcManager = manager
     }
 
     fun refreshContainers() {
+        refreshJob?.cancel()
         val requestId = refreshCounter.incrementAndGet()
-        val tempItems = mutableListOf<Item>()
+        
+        refreshJob = viewModelScope.launch {
+            val manager = lxcManager ?: run {
+                _items.postValue(mutableListOf())
+                return@launch
+            }
 
-        lxcManager?.let { manager ->
             try {
-                val containers = manager.listContainers()
-                for (container in containers) {
-                    if (requestId != refreshCounter.get()) return
-                    val item = containerToItem(container)
-                    tempItems.add(item)
+                val containers = withContext(Dispatchers.IO) {
+                    manager.listContainers()
                 }
-                _items.postValue(tempItems.toMutableList())
+                
+                if (requestId != refreshCounter.get()) return@launch
+
+                val initialItems = containers.map { container ->
+                    Item(
+                        name = container.name,
+                        state = "LOADING",
+                        autostart = "LOADING",
+                        groups = "LOADING",
+                        ipv4 = null,
+                        ipv6 = null,
+                        unprivileged = "LOADING"
+                    )
+                }.toMutableList()
+                _items.postValue(initialItems)
+
+                for ((index, container) in containers.withIndex()) {
+                    if (requestId != refreshCounter.get()) break
+                    
+                    val detailedItem = withContext(Dispatchers.IO) {
+                        containerToItem(container)
+                    }
+                    
+                    if (requestId != refreshCounter.get()) break
+
+                    val currentList = _items.value?.toMutableList() ?: continue
+                    if (index < currentList.size && currentList[index].name == detailedItem.name) {
+                        currentList[index] = detailedItem
+                        _items.postValue(currentList)
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e("DashboardViewModel", "Error getting containers", e)
-                _items.postValue(tempItems.toMutableList())
             }
-        } ?: run {
-            _items.postValue(tempItems.toMutableList())
         }
     }
 
@@ -61,7 +99,7 @@ class DashboardViewModel : ViewModel() {
         )
     }
 
-    private fun getAddresses(container: LxcContainer, family: String): String {
+    private fun getAddresses(container: LxcContainer, family: String): String? {
         val interfaces = container.interfaces
         val addresses = mutableListOf<String>()
         for (iface in interfaces) {
@@ -73,6 +111,11 @@ class DashboardViewModel : ViewModel() {
                 }
             }
         }
-        return addresses.joinToString(", ")
+        return if (addresses.isEmpty()) null else addresses.joinToString(", ")
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        refreshJob?.cancel()
     }
 }

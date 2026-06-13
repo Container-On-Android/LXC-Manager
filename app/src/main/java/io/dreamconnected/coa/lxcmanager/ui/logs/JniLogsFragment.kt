@@ -6,24 +6,22 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.core.widget.NestedScrollView
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.topjohnwu.superuser.Shell
 import io.dreamconnected.coa.lxcmanager.R
 
 class JniLogsFragment : Fragment() {
 
-    private lateinit var scrollView: NestedScrollView
-    private lateinit var logContainer: LinearLayout
+    private lateinit var recyclerView: RecyclerView
+    private val adapter = LogsAdapter()
     private val handler = Handler(Looper.getMainLooper())
-    private var isRefreshing = false
     private var isUserScrolling = false
     private var pendingRefresh = false
-    private var shellInitialized = false
-    private val logs = mutableListOf<LogEntry>()
+    private val logPattern by lazy { Regex("""^([IWEDVFA])\s*/\s*(\S+?)\s*\(\d+\)\s*:\s*(.*)$""") }
+    private val MAX_LOGS = 500
 
     private val refreshRunnable = object : Runnable {
         override fun run() {
@@ -31,13 +29,11 @@ class JniLogsFragment : Fragment() {
 
             if (isUserScrolling) {
                 pendingRefresh = true
-                handler.postDelayed(this, 2000)
-            } else if (shellInitialized) {
+                handler.postDelayed(this, 3000)
+            } else {
                 pendingRefresh = false
                 refreshLogs()
-                handler.postDelayed(this, 2000)
-            } else {
-                handler.postDelayed(this, 1000)
+                handler.postDelayed(this, 3000)
             }
         }
     }
@@ -47,57 +43,42 @@ class JniLogsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val view = inflater.inflate(R.layout.item_log_entry, container, false)
-        scrollView = view.findViewById(R.id.scrollView)
-        logContainer = view.findViewById(R.id.logContainer)
+        val view = inflater.inflate(R.layout.fragment_log_list, container, false)
+        recyclerView = view.findViewById(R.id.recyclerView)
         return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupScrollListener()
-        initShell()
+        setupRecyclerView()
+        startLogCapture()
     }
 
-    private fun initShell() {
-        Shell.cmd("echo shell_init").submit { result ->
-            shellInitialized = result.isSuccess
-            if (shellInitialized) {
-                startLogCapture()
+    private fun setupRecyclerView() {
+        recyclerView.layoutManager = LinearLayoutManager(context)
+        recyclerView.adapter = adapter
+
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                super.onScrollStateChanged(recyclerView, newState)
+                isUserScrolling = newState != RecyclerView.SCROLL_STATE_IDLE
             }
-        }
-    }
 
-    private fun setupScrollListener() {
-        scrollView.viewTreeObserver.addOnScrollChangedListener {
-            if (!isAdded) return@addOnScrollChangedListener
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                val lastVisibleItem = layoutManager.findLastCompletelyVisibleItemPosition()
+                val itemCount = adapter.itemCount
 
-            val scrollY = scrollView.scrollY
-            val scrollHeight = scrollView.getChildAt(0)?.height ?: 0
-            val viewHeight = scrollView.height
-
-            val isAtBottom = scrollY + viewHeight >= scrollHeight - 50
-            val isScrolling = !scrollView.canScrollVertically(1)
-
-            if (isAtBottom && isScrolling) {
-                if (isUserScrolling) {
-                    isUserScrolling = false
-                    handler.post {
-                        scrollToBottom()
-                        if (pendingRefresh && shellInitialized) {
-                            refreshLogs()
-                            pendingRefresh = false
-                        }
-                    }
+                if (!isUserScrolling && lastVisibleItem >= itemCount - 1 && pendingRefresh) {
+                    pendingRefresh = false
+                    refreshLogs()
                 }
-            } else {
-                isUserScrolling = true
             }
-        }
+        })
     }
 
     private fun startLogCapture() {
-        isRefreshing = true
         isUserScrolling = false
         pendingRefresh = false
         refreshLogs()
@@ -105,115 +86,99 @@ class JniLogsFragment : Fragment() {
     }
 
     private fun refreshLogs() {
-        if (!isAdded || isUserScrolling || !shellInitialized) return
+        if (!isAdded || isUserScrolling) return
 
-        Thread {
-            try {
+        // 必须走 libsu 的 root shell：JNI 日志由 RootService (LxcNative) 进程产生，
+        // 那个进程以 root 身份写 logcat，app 主进程 spawn 的子进程读不到。
+        // -s lxc:<letter> 在 shell 层就按用户设置的最低等级过滤，
+        // 既避免回流大量无关日志把环形缓冲区冲掉，也免去代码里二次过滤。
+        val minLevel = readMinLogLevel()
+        val letter = LogLevel.toLogcatLetter(minLevel)
+        Shell.cmd("/system/bin/logcat -d -v brief -s lxc:$letter -t 5000")
+            .submit { result ->
                 val newLogs = mutableListOf<LogEntry>()
-
-                Shell.cmd("logcat -d -v brief")
-                    .submit { result ->
-                        if (result.isSuccess) {
-                            val output = result.out.joinToString("\n")
-                            val lines = output.split("\n")
-
-                            lines.forEach { line ->
-                                val trimmed = line.trim()
-                                if (trimmed.isNotBlank() && !trimmed.startsWith("-") && !trimmed.contains("beginning of")) {
-                                    val entry = parseLogLine(trimmed)
-                                    if (entry != null && (entry.tag == "lxc" || entry.tag == "LxcContainer")) {
-                                        newLogs.add(entry)
-                                    }
-                                }
-                            }
-                        }
-
-                        activity?.runOnUiThread {
-                            if (!isUserScrolling) {
-                                displayLogs(newLogs)
+                if (result.isSuccess) {
+                    result.out.forEach { line ->
+                        val trimmed = line.trim()
+                        if (trimmed.isNotBlank() &&
+                            !trimmed.startsWith("-") &&
+                            !trimmed.contains("beginning of")
+                        ) {
+                            val entry = parseLogLine(trimmed)
+                            if (entry != null && entry.tag == "lxc") {
+                                newLogs.add(entry)
                             }
                         }
                     }
+                }
 
-            } catch (e: Exception) {
+                val limitedLogs = newLogs.takeLast(MAX_LOGS)
+
+                activity?.runOnUiThread {
+                    if (!isUserScrolling) {
+                        displayLogs(limitedLogs)
+                    }
+                }
             }
-        }.start()
+    }
+
+    private fun readMinLogLevel(): LogLevel {
+        val context = context ?: return LogLevel.INFO
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        return LogLevel.fromPreference(prefs.getString("log_level", "info"))
     }
 
     private fun parseLogLine(line: String): LogEntry? {
         return try {
-            val pattern = Regex("""^([IWEDV])\s*/\s*(\S+?)\s*\(\d+\)\s*:\s*(.*)$""")
-            val match = pattern.find(line) ?: return null
+            val match = logPattern.find(line) ?: return null
 
             val levelStr = match.groupValues[1]
             val tag = match.groupValues[2]
             val message = match.groupValues[3]
 
             val level = when (levelStr) {
+                "V" -> LogLevel.VERBOSE
+                "D" -> LogLevel.DEBUG
                 "I" -> LogLevel.INFO
                 "W" -> LogLevel.WARN
                 "E" -> LogLevel.ERROR
-                "D" -> LogLevel.INFO
-                "V" -> LogLevel.INFO
+                "F", "A" -> LogLevel.FATAL
                 else -> LogLevel.INFO
             }
 
             LogEntry(System.currentTimeMillis(), level, tag, message)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
 
     private fun displayLogs(newLogs: List<LogEntry>) {
-        if (!isAdded || isUserScrolling) return
+        if (!isAdded) return
 
-        logs.clear()
-        logs.addAll(newLogs)
-
-        logContainer.removeAllViews()
-
-        logs.takeLast(100).forEach { logEntry ->
-            val logView = createLogView(logEntry)
-            logContainer.addView(logView)
-        }
-
-        if (!isUserScrolling) {
-            scrollToBottom()
+        adapter.submitList(newLogs) {
+            if (!isUserScrolling && newLogs.isNotEmpty()) {
+                scrollToBottom()
+            }
         }
     }
 
     private fun scrollToBottom() {
-        if (!isAdded) return
-        scrollView.post {
-            scrollView.fullScroll(View.FOCUS_DOWN)
-        }
-    }
-
-    private fun createLogView(logEntry: LogEntry): View {
-        return TextView(requireContext()).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = resources.getDimensionPixelSize(R.dimen.log_item_margin)
+        if (!isAdded || adapter.itemCount == 0) return
+        recyclerView.post {
+            if (!isAdded) return@post
+            val count = adapter.itemCount
+            if (count <= 0) return@post
+            val target = (count - 1).coerceAtLeast(0)
+            try {
+                recyclerView.smoothScrollToPosition(target)
+            } catch (_: IllegalArgumentException) {
+            } catch (_: IllegalStateException) {
             }
-
-            val backgroundColor = when (logEntry.level) {
-                LogLevel.INFO -> ContextCompat.getColor(context, R.color.log_info_background)
-                LogLevel.WARN -> ContextCompat.getColor(context, R.color.log_warn_background)
-                LogLevel.ERROR -> ContextCompat.getColor(context, R.color.log_error_background)
-            }
-
-            setBackgroundColor(backgroundColor)
-            setPadding(16, 12, 16, 12)
-            text = "[${logEntry.level}] [${logEntry.tag}] ${logEntry.message}"
-            textSize = 11f
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        isRefreshing = false
         handler.removeCallbacks(refreshRunnable)
     }
 }

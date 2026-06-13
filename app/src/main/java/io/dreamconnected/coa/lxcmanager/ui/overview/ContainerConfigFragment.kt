@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import io.dreamconnected.coa.lxcmanager.MainActivity
-import io.dreamconnected.coa.lxcmanager.R
 import io.dreamconnected.coa.lxcmanager.databinding.FragmentContainerConfigBinding
 import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
 import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
@@ -29,7 +28,7 @@ class ContainerConfigFragment : BaseFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         _binding = FragmentContainerConfigBinding.inflate(inflater, container, false)
         arguments?.let { containerName = it.getString("container_name") }
         return binding.root
@@ -61,18 +60,23 @@ class ContainerConfigFragment : BaseFragment() {
 
         val configPath = container.configFileName()
         
-        val result = ShellCommandExecutor.execCommandSync("cat $configPath")
-        
-        if (result.isNotEmpty() && !result.contains("cat:") && !result.contains("No such file")) {
-            configContent = result
-            hasChanges = false
-            binding.etConfigContent.setText(result)
-        } else {
-            binding.etConfigContent.setText("# Failed to load config file\n# Path: $configPath")
-        }
+        ShellCommandExecutor.execCommand("cat $configPath", object : ShellCommandExecutor.CommandOutputListener {
+            override fun onOutput(output: String?) {}
+
+            override fun onCommandComplete(success: Boolean, exitCode: Int, output: String?) {
+                if (!isAdded || _binding == null) return
+                if (success && output != null && !output.contains("cat:") && !output.contains("No such file")) {
+                    configContent = output
+                    hasChanges = false
+                    binding.etConfigContent.setText(output)
+                } else {
+                    binding.etConfigContent.setText("# Failed to load config file\n# Path: $configPath")
+                }
+            }
+        })
     }
 
-    public fun saveConfig() {
+    fun saveConfig() {
         val currentText = binding.etConfigContent.text.toString()
         if (currentText == configContent) {
             Toast.makeText(requireContext(), "No changes to save", Toast.LENGTH_SHORT).show()
@@ -80,7 +84,7 @@ class ContainerConfigFragment : BaseFragment() {
         }
 
         val container = lxcManager?.getContainer(containerName) ?: return
-        val lxcPath = container.getLxcPath()
+        val lxcPath = container.lxcPath
         val configPath = "$lxcPath/$containerName/config"
         
         showSaveConfirmDialog(configPath, currentText)
@@ -104,7 +108,8 @@ class ContainerConfigFragment : BaseFragment() {
             override fun onOutput(output: String?) {}
             
             override fun onCommandComplete(success: Boolean, exitCode: Int, output: String?) {
-                requireActivity().runOnUiThread {
+                if (!isAdded) return
+                activity?.runOnUiThread {
                     if (success) {
                         configContent = newContent
                         hasChanges = false
