@@ -52,6 +52,23 @@
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/category_settings_monitor">
+        <rikka.material.preference.MaterialSwitchPreference
+            app:defaultValue="false"
+            app:key="monitoring_enabled"
+            app:title="@string/label_monitoring"
+            app:icon="@drawable/settings_monit_status"/>
+
+        <rikka.preference.SimpleMenuPreference
+            app:defaultValue="5"
+            app:entries="@array/monitoring_interval_entries"
+            app:entryValues="@array/monitoring_interval_values"
+            app:key="monitoring_interval"
+            app:title="@string/label_monitoring_interval"
+            app:icon="@drawable/settings_monit_timer"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/category_settings_manager">
         <Preference
             app:icon="@drawable/settings_lxc_dir"

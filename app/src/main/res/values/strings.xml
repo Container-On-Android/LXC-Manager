@@ -85,4 +85,9 @@
     <!-- Logs Fragment -->
     <string name="app_log">App Logs</string>
     <string name="jni_log">JNI Logs</string>
+
+    <!-- Monitor Settings -->
+    <string name="category_settings_monitor">Monitor</string>
+    <string name="label_monitoring">Enable monitoring</string>
+    <string name="label_monitoring_interval">Refresh interval</string>
 </resources>

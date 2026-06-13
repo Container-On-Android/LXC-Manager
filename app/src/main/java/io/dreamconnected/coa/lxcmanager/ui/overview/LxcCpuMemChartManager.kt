@@ -27,6 +27,11 @@ class LxcCpuMemChartManager {
         private val dataList1 = mutableListOf<Float>()
         private val dataList2 = mutableListOf<Float>()
         private var maxCount = 5
+        private var refreshInterval = 5000L
+
+        fun setRefreshInterval(intervalMillis: Long) {
+            refreshInterval = intervalMillis
+        }
 
         fun initData(count: Int, initData1: FloatArray, initData2: FloatArray) {
             maxCount = count
@@ -34,20 +39,21 @@ class LxcCpuMemChartManager {
             dataList1.clear()
             dataList2.clear()
             val now = System.currentTimeMillis()
-            val interval = 5000L
             for (i in 0 until count) {
-                xTimeList.add(timeFormat.format(Date(now - (count - 1 - i) * interval)))
+                xTimeList.add(timeFormat.format(Date(now - (count - 1 - i) * refreshInterval)))
                 dataList1.add(initData1[i])
                 dataList2.add(initData2[i])
             }
         }
         
         fun addEntry(newValue1: Float, newValue2: Float) {
+            // Remove first element if we're already at max
             if (dataList1.size >= maxCount) {
                 dataList1.removeAt(0)
                 dataList2.removeAt(0)
                 xTimeList.removeAt(0)
             }
+            // Add new entry at the end
             dataList1.add(newValue1)
             dataList2.add(newValue2)
             xTimeList.add(timeFormat.format(Date()))
@@ -67,7 +73,7 @@ class LxcCpuMemChartManager {
             val dataSet = LineDataSet(yValues1, lineNameOne).apply {
                 lineWidth = 1.75f
                 circleRadius = 2f
-                color = Color.rgb(89, 194, 230)
+                color = Color.rgb(89, 194, 230) // Blue for CPU
                 setCircleColor(Color.rgb(89, 194, 230))
                 highLightColor = Color.GREEN
                 isHighlightEnabled = true
@@ -78,7 +84,7 @@ class LxcCpuMemChartManager {
             val dataSet1 = LineDataSet(yValues2, lineNameTwo).apply {
                 lineWidth = 1.75f
                 circleRadius = 2f
-                color = Color.rgb(252, 76, 122)
+                color = Color.rgb(252, 76, 122) // Red for Mem
                 setCircleColor(Color.rgb(252, 76, 122))
                 highLightColor = Color.GREEN
                 isHighlightEnabled = true
@@ -87,14 +93,15 @@ class LxcCpuMemChartManager {
             }
 
             val dataSets = ArrayList<ILineDataSet>()
-            dataSets.add(dataSet)
-            dataSets.add(dataSet1)
+            dataSets.add(dataSet)   // Blue (CPU) comes first!
+            dataSets.add(dataSet1)   // Red (Mem) comes second
 
             val lineData = LineData(dataSets)
 
             // 设置 x 轴的值
             mLineChart.xAxis.valueFormatter = MyValueFormatter(xTimeList)
             mLineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
+            mLineChart.xAxis.setLabelCount(maxCount, true)
 
             return lineData
         }
@@ -114,21 +121,22 @@ class LxcCpuMemChartManager {
                 dataSet1?.let {
                     it.clear()
                     for (i in xTimeList.indices) {
-                        it.addEntry(Entry(i.toFloat(), dataList1[i]))
+                        it.addEntry(Entry(i.toFloat(), dataList1[i])) // dataList1 = CPU
                     }
-                    Log.d("LxcCpuMemChart", "updateChartData: DataSet1 (Mem) entries: ${it.entryCount}")
+                    Log.d("LxcCpuMemChart", "updateChartData: DataSet1 (CPU) entries: ${it.entryCount}")
                 }
                 
                 val dataSet2 = lineData.getDataSetByIndex(1) as? LineDataSet
                 dataSet2?.let {
                     it.clear()
                     for (i in xTimeList.indices) {
-                        it.addEntry(Entry(i.toFloat(), dataList2[i]))
+                        it.addEntry(Entry(i.toFloat(), dataList2[i])) // dataList2 = Mem
                     }
-                    Log.d("LxcCpuMemChart", "updateChartData: DataSet2 (CPU) entries: ${it.entryCount}")
+                    Log.d("LxcCpuMemChart", "updateChartData: DataSet2 (Mem) entries: ${it.entryCount}")
                 }
                 
                 mLineChart.xAxis.valueFormatter = MyValueFormatter(xTimeList)
+                mLineChart.xAxis.setLabelCount(maxCount, true)
                 
                 lineData.notifyDataChanged()
                 mLineChart.notifyDataSetChanged()
@@ -169,13 +177,14 @@ class LxcCpuMemChartManager {
             mLegend.form = Legend.LegendForm.SQUARE //样式
             mLegend.formSize = 6f //字体
             mLegend.textColor = Color.GRAY //颜色
-            lineChart.setVisibleXRange(0f, 4f) //x轴可显示的坐标范围
+            lineChart.setVisibleXRange(0f, (maxCount - 1).toFloat()) //x轴可显示的坐标 range exactly for count-1 points
             val xAxis = lineChart.xAxis //x轴的标示
             xAxis.position = XAxis.XAxisPosition.BOTTOM //x轴位置
             xAxis.textColor = Color.GRAY //字体的颜色
             xAxis.setTextSize(10f) //字体大小
             xAxis.gridColor = Color.GRAY //网格线颜色
             xAxis.setDrawGridLines(false) //不显示网格线
+            xAxis.setLabelCount(maxCount, true) // Exactly maxCount labels!
             val axisLeft = lineChart.axisLeft //y轴左边标示
             val axisRight = lineChart.axisRight //y轴右边标示
             axisLeft.textColor = Color.GRAY //字体颜色

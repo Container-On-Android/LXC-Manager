@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import com.github.mikephil.charting.charts.LineChart
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.rk.karbon_exec.launchInternalTerminal
@@ -18,7 +19,6 @@ import io.dreamconnected.coa.lxcmanager.databinding.FragmentContainerOverviewChi
 import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
 import io.dreamconnected.coa.lxcmanager.util.ScreenMask
 import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
-import io.github.coap.lxc.LxcContainer
 import io.github.coap.lxc.LxcManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -51,6 +51,8 @@ class ContainerOverviewChildFragment : BaseFragment() {
         val lineChart2 = view.findViewById<LineChart>(R.id.lxc_network_chart)
         val statusBar = view.findViewById<MaterialSwitch>(R.id.main_switch_bar)
 
+        statusBar.isEnabled = false
+
         containerName?.let { name ->
             lxcManager = (requireActivity() as MainActivity).getLxcManager()
             statusMonitor = ContainerStatusMonitor(lxcManager, name)
@@ -61,10 +63,44 @@ class ContainerOverviewChildFragment : BaseFragment() {
                 }
             }
 
-            statusMonitor?.startMonitoring(5000L)
+            setupClickListeners(view, statusBar)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        applyMonitoringSettings()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        statusMonitor?.stopMonitoring()
+    }
+
+    private fun applyMonitoringSettings() {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        val monitoringEnabled = prefs.getBoolean("monitoring_enabled", false)
+        val intervalSeconds = prefs.getString("monitoring_interval", "5")?.toLongOrNull() ?: 5L
+        val intervalMillis = intervalSeconds * 1000
+
+        LxcCpuMemChartManager.setRefreshInterval(intervalMillis)
+
+        val numX = 5
+        val dataCPU = floatArrayOf(0f, 0f, 0f, 0f, 0f)
+        val dataMem = floatArrayOf(0f, 0f, 0f, 0f, 0f)
+        LxcCpuMemChartManager.initData(numX, dataCPU, dataMem)
+
+        val lineChart2 = view?.findViewById<LineChart>(R.id.lxc_network_chart)
+        lineChart2?.let {
+            val lineData = LxcCpuMemChartManager.initDoubleLineChart(it)
+            LxcCpuMemChartManager.initDataStyle(it, lineData)
         }
 
-        setupClickListeners(view, statusBar)
+        if (monitoringEnabled) {
+            statusMonitor?.startMonitoring(intervalMillis)
+        } else {
+            statusMonitor?.stopMonitoring()
+        }
     }
 
     private fun updateStatusUI(status: ContainerStatus, statusBar: MaterialSwitch, lineChart2: LineChart) {
@@ -76,7 +112,7 @@ class ContainerOverviewChildFragment : BaseFragment() {
                     statusBar.text = getString(R.string.co_container_status_started)
                 }
                 isFreeze = false
-                onNewData(status.cpu, status.mem, lineChart2)
+                onNewData(status.mem, status.cpu, lineChart2)
             }
             "STOPPED" -> {
                 if (statusBar.isChecked || statusBar.text != getString(R.string.co_container_status_stopped)) {
@@ -259,9 +295,9 @@ class ContainerOverviewChildFragment : BaseFragment() {
         val dataCPU = floatArrayOf(0f, 0f, 0f, 0f, 0f)
         val dataMem = floatArrayOf(0f, 0f, 0f, 0f, 0f)
 
-        LxcCpuMemChartManager.setLineName1("Mem")
-        LxcCpuMemChartManager.setLineName2("CPU")
-        LxcCpuMemChartManager.initData(numX, dataCPU, dataMem)
+        LxcCpuMemChartManager.setLineName1("CPU (%)") // First line = CPU
+        LxcCpuMemChartManager.setLineName2("Mem (%)") // Second line = Mem
+        LxcCpuMemChartManager.initData(numX, dataCPU, dataMem) // Keep data arrays same, since line1 and line2 are swapped in manager!
 
         val lineData = LxcCpuMemChartManager.initDoubleLineChart(lineChart2)
         LxcCpuMemChartManager.initDataStyle(lineChart2, lineData)
@@ -270,7 +306,7 @@ class ContainerOverviewChildFragment : BaseFragment() {
     fun onNewData(newValue1: Float, newValue2: Float, lineChart2: LineChart) {
         Log.d("ContainerOverview", "onNewData: Mem=$newValue1, CPU=$newValue2")
         requireActivity().runOnUiThread {
-            LxcCpuMemChartManager.addEntry(newValue1, newValue2)
+            LxcCpuMemChartManager.addEntry(newValue2, newValue1) // dataList1=CPU, dataList2=Mem → swap
             LxcCpuMemChartManager.updateChartData(lineChart2)
             Log.d("ContainerOverview", "onNewData: Chart updated on UI thread")
         }

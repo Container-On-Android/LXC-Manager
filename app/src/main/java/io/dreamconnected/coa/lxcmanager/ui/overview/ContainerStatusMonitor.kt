@@ -1,8 +1,8 @@
 package io.dreamconnected.coa.lxcmanager.ui.overview
 
-import android.annotation.SuppressLint
+import android.app.ActivityManager
+import android.content.Context
 import android.util.Log
-import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
 import io.github.coap.lxc.LxcManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,8 +14,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.RandomAccessFile
-import kotlin.math.round
 
 data class ContainerStatus(
     val status: String,
@@ -33,13 +31,33 @@ class ContainerStatusMonitor(
     val statusFlow: SharedFlow<ContainerStatus> = _statusFlow.asSharedFlow()
 
     private var monitorJob: Job? = null
-    private var previousCpuUse = -1f
 
-    fun startMonitoring(intervalMillis: Long = 1000L) {
+    // Previous cgroup values for delta calculation
+    private var prevCpuNanos: Long = -1
+    private var prevMemBytes: Long = -1
+    private var prevSampleTime: Long = -1
+
+    fun startMonitoring(intervalMillis: Long) {
         Log.d(TAG, "startMonitoring: interval=$intervalMillis")
         stopMonitoring()
+        prevCpuNanos = -1
+        prevMemBytes = -1
+        prevSampleTime = -1
         monitorJob = launch {
             Log.d(TAG, "Monitoring loop started")
+
+            val initialStatus = getContainerStatus()
+            _statusFlow.emit(ContainerStatus(initialStatus))
+            Log.d(TAG, "Initial container status: $initialStatus")
+
+            if (initialStatus == "RUNNING") {
+                // First call initializes delta state (returns 0), second call gives real delta
+                getContainerResources()
+                delay(500)
+                val (cpu, mem) = getContainerResources()
+                _statusFlow.emit(ContainerStatus(initialStatus, cpu, mem))
+            }
+
             while (isActive) {
                 val status = getContainerStatus()
                 Log.d(TAG, "Container status: $status")
@@ -65,175 +83,64 @@ class ContainerStatusMonitor(
         return lxcManager?.getContainer(containerName)?.state ?: "STOPPED"
     }
 
-    @SuppressLint("DefaultLocale")
     private suspend fun getContainerResources(): Pair<Float, Float> {
         return withContext(Dispatchers.IO) {
-            Log.d(TAG, "getContainerResources: Starting resource fetch")
-            val result = ShellCommandExecutor.execCommandSync(
-                "lxc-info $containerName -H | awk \"/CPU use/ {cpu=\\$3} /Memory use/ {memory=\\$3} END {print cpu \",\" memory}\""
-            )
+            val c = lxcManager?.getContainer(containerName)
+            Log.d(TAG, "getContainerResources: container = $c")
             
-            Log.d(TAG, "getContainerResources: lxc-info result: '${result}'")
+            val cpuStr = c?.getCgroupItem("cpuacct.usage")
+            Log.d(TAG, "getContainerResources: cpuStr = '$cpuStr'")
             
-            if (result.isNotEmpty() && !result.contains("inaccessible") && !result.contains("not found") && !result.contains("error")) {
-                val parts = result.trim().split(" ")
-                Log.d(TAG, "getContainerResources: Parsed parts: $parts")
-                
-                if (parts.size >= 2) {
-                    val cpuRaw = parts[0].toLongOrNull()
-                    val memRaw = parts[1].toFloatOrNull()
-                    
-                    if (cpuRaw != null && memRaw != null) {
-                        val cpuFloat = cpuRaw.toDouble().div(1000).div(1000).div(1000).toFloat()
-                            .let { String.format("%.2f", it).toFloat() }
-                        Log.d(TAG, "getContainerResources: CPU raw value: $cpuFloat")
-                        val cpu = calculateCpuUsage(cpuFloat, 1000)
-                        val mem = (memRaw.div(1024).div(1024).div(1024)
-                            .div(getTotalMemoryInGB()).times(100)).toFloat()
-                            .let { String.format("%.2f", it).toFloat() }
-                        Log.d(TAG, "getContainerResources: Using lxc-info - CPU: ${cpu}%, Mem: ${mem}%")
-                        return@withContext Pair(cpu, mem)
-                    } else {
-                        Log.d(TAG, "getContainerResources: Failed to parse numeric values from lxc-info")
-                    }
-                } else {
-                    Log.d(TAG, "getContainerResources: Not enough parts from lxc-info")
-                }
-            }
-            
-            Log.d(TAG, "getContainerResources: lxc-info failed, falling back to /proc")
-            return@withContext getResourcesFromProc()
-        }
-    }
+            val memUserStr = c?.getCgroupItem("memory.usage_in_bytes") ?: "0"
+            val memKernelStr = c?.getCgroupItem("memory.kmem.usage_in_bytes") ?: "0"
 
-    private fun getResourcesFromProc(): Pair<Float, Float> {
-        val pid = lxcManager?.getContainer(containerName)?.initPid() ?: run {
-            Log.d(TAG, "getResourcesFromProc: lxcManager is null or getContainer failed")
-            return Pair(0f, 0f)
-        }
-        Log.d(TAG, "getResourcesFromProc: Container PID: $pid")
-        if (pid <= 0) {
-            Log.d(TAG, "getResourcesFromProc: Invalid PID: $pid")
-            return Pair(0f, 0f)
-        }
+            val cpuNanos = cpuStr?.trim()?.toLongOrNull() ?: -1L
+            val memBytes = (memUserStr.trim().toLongOrNull() ?: 0L) + (memKernelStr.trim().toLongOrNull() ?: 0L)
 
-        val cpu = try {
-            val nsInode = ShellCommandExecutor.execCommandSync("readlink /proc/$pid/ns/pid | cut -d'[' -f2 | cut -d']' -f1")
-            Log.d(TAG, "getResourcesFromProc: Container PID namespace inode: '$nsInode'")
-            
-            if (nsInode.isEmpty() || nsInode.isBlank()) {
-                Log.d(TAG, "getResourcesFromProc: Failed to get namespace inode")
-                return Pair(0f, 0f)
-            }
-            
-            val result = ShellCommandExecutor.execCommandSync(
-                "find /proc -maxdepth 1 -type d -name '[0-9]*' 2>/dev/null | while read p; do readlink \"\$p/ns/pid\" 2>/dev/null | grep -q \"$nsInode\" && cat \"\$p/stat\" 2>/dev/null | awk '{print $14 + $15}'; done | awk '{sum += $1} END {print sum}'"
-            )
-            Log.d(TAG, "getResourcesFromProc: Total jiffies from container processes: '$result'")
-            
-            if (result.isEmpty() || result.isBlank()) {
-                Log.d(TAG, "getResourcesFromProc: Failed to get total jiffies, trying fallback")
-                val fallbackResult = ShellCommandExecutor.execCommandSync(
-                    "ls /proc/$pid/task/ 2>/dev/null | while read t; do cat /proc/$pid/task/\$t/stat 2>/dev/null | awk '{sum += $14 + $15}'; done | awk '{sum += $1} END {print sum}'"
-                )
-                Log.d(TAG, "getResourcesFromProc: Fallback jiffies: '$fallbackResult'")
-                if (fallbackResult.isEmpty() || fallbackResult.isBlank()) {
-                    return Pair(0f, 0f)
-                }
-                return Pair(calculateCpuUsage(fallbackResult.trim().toLongOrNull()?.toFloat()?.div(100) ?: 0f, 1000), 0f)
-            }
-            
-            val totalJiffies = result.trim().toLongOrNull() ?: 0L
-            Log.d(TAG, "getResourcesFromProc: Parsed total jiffies: $totalJiffies")
-            
-            val totalTime = totalJiffies.toFloat() / 100.0f
-            Log.d(TAG, "getResourcesFromProc: totalTime=$totalTime seconds")
-            
-            val cpuUsage = calculateCpuUsage(totalTime, 1000)
-            Log.d(TAG, "getResourcesFromProc: CPU from /proc: ${cpuUsage}%")
-            cpuUsage
-        } catch (e: Exception) {
-            Log.e(TAG, "getResourcesFromProc: Failed to read CPU info", e)
-            0f
-        }
+            Log.d(TAG, "cgroup raw: cpu=$cpuNanos, mem=$memBytes")
 
-        val mem = try {
-            val statusContent = ShellCommandExecutor.execCommandSync("cat /proc/$pid/status")
-            Log.d(TAG, "getResourcesFromProc: status content (first 200 chars): ${statusContent.take(200)}")
-            
-            if (statusContent.isEmpty() || statusContent.contains("No such file")) {
-                Log.d(TAG, "getResourcesFromProc: /proc/$pid/status not accessible")
-                return Pair(cpu, 0f)
+            if (prevCpuNanos < 0 || prevSampleTime < 0) {
+                // First sample, initialize and return 0
+                prevCpuNanos = cpuNanos
+                prevMemBytes = memBytes
+                prevSampleTime = System.currentTimeMillis()
+                return@withContext Pair(0f, 0f)
             }
-            
-            var memResult: Float
-            statusContent.split("\n").forEach { line ->
-                if (line.startsWith("VmRSS:")) {
-                    val parts = line.trim().split(Regex("\\s+"))
-                    Log.d(TAG, "getResourcesFromProc: VmRSS line: $line, parts: $parts")
-                    if (parts.size >= 2) {
-                        val rssKB = parts[1].toFloatOrNull() ?: 0f
-                        Log.d(TAG, "getResourcesFromProc: VmRSS KB: $rssKB")
-                        val rssGB = rssKB / 1024f / 1024f
-                        val totalGB = getTotalMemoryInGB()
-                        Log.d(TAG, "getResourcesFromProc: Total memory GB: $totalGB")
-                        if (totalGB > 0) {
-                            memResult = (rssGB / totalGB.toFloat() * 100).let { String.format("%.2f", it).toFloat() }
-                            Log.d(TAG, "getResourcesFromProc: Mem from /proc: ${memResult}%")
-                            return Pair(cpu, memResult)
-                        }
-                    }
-                }
-            }
-            Log.d(TAG, "getResourcesFromProc: VmRSS not found in status file")
-            0f
-        } catch (e: Exception) {
-            Log.e(TAG, "getResourcesFromProc: Failed to read memory info", e)
-            0f
-        }
 
-        Log.d(TAG, "getResourcesFromProc: Final result - CPU: ${cpu}%, Mem: ${mem}%")
-        return Pair(cpu, mem)
-    }
+            val now = System.currentTimeMillis()
+            val deltaTimeMillis = now - prevSampleTime
 
-    private fun calculateCpuUsage(currentCpuUse: Float, samplingInterval: Long): Float {
-        val cpuCores = Runtime.getRuntime().availableProcessors()
-        Log.d(TAG, "calculateCpuUsage: currentCpuUse=$currentCpuUse, previousCpuUse=$previousCpuUse, interval=$samplingInterval, cores=$cpuCores")
-        
-        if (previousCpuUse == -1f) {
-            previousCpuUse = currentCpuUse
-            Log.d(TAG, "calculateCpuUsage: First sample, returning 0")
-            return 0f
+            // CPU: delta_ns / (delta_time_ms * 1_000_000) / cores * 100
+            val cpuDelta = if (cpuNanos > prevCpuNanos) cpuNanos - prevCpuNanos else 0L
+            val cpuPercent = if (deltaTimeMillis > 0 && cpuNanos != -1L) {
+                val cpuCores = Runtime.getRuntime().availableProcessors().toFloat()
+                val cpuUsage = (cpuDelta.toFloat() / (deltaTimeMillis * 1_000_000f)) * 100f / cpuCores
+                cpuUsage.coerceIn(0f, 100f)
+            } else 0f
+
+            // Memory: container_mem / total_mem * 100
+            val memPercent = if (memBytes > 0) {
+                val totalMemGB = getTotalMemoryInGB()
+                if (totalMemGB > 0) {
+                    val memGB = memBytes / (1024.0 * 1024 * 1024)
+                    ((memGB / totalMemGB) * 100).coerceIn(0.0, 100.0).toFloat()
+                } else 0f
+            } else 0f
+
+            prevCpuNanos = cpuNanos
+            prevMemBytes = memBytes
+            prevSampleTime = now
+
+            Log.d(TAG, "calculated: cpu=${cpuPercent}%, mem=${memPercent}%")
+            return@withContext Pair(cpuPercent, memPercent)
         }
-        
-        val increment = currentCpuUse - previousCpuUse
-        previousCpuUse = currentCpuUse
-        
-        if (increment < 0) {
-            Log.d(TAG, "calculateCpuUsage: Negative increment, returning 0")
-            return 0f
-        }
-        
-        val intervalSeconds = samplingInterval / 1000.0f
-        val cpuUsage = (increment / intervalSeconds) * 100.0f / cpuCores.toFloat()
-        val clamped = if (cpuUsage > 100) 100f else cpuUsage
-        val rounded = round(clamped * 100) / 100
-        
-        Log.d(TAG, "calculateCpuUsage: increment=$increment, intervalSeconds=$intervalSeconds, cpuUsage=$rounded%")
-        return rounded
     }
 
     private fun getTotalMemoryInGB(): Double {
-        return try {
-            val reader = RandomAccessFile("/proc/meminfo", "r")
-            val load = reader.readLine()
-            val memInfo = load.replace(Regex("\\D+"), "")
-            reader.close()
-            val totalMemoryInBytes = memInfo.toLong() * 1024
-            totalMemoryInBytes / (1024.0 * 1024 * 1024)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            -1.0
-        }
+        val activityManager = ActivityManager::class.java.getMethod("getSystemService", String::class.java)
+            .invoke(null, Context.ACTIVITY_SERVICE) as? ActivityManager
+        val memInfo = ActivityManager.MemoryInfo()
+        activityManager?.getMemoryInfo(memInfo)
+        return if (memInfo.totalMem > 0) memInfo.totalMem / (1024.0 * 1024 * 1024) else -1.0
     }
 }
