@@ -20,12 +20,11 @@ import io.dreamconnected.coa.lxcmanager.ui.BaseFragment
 import io.dreamconnected.coa.lxcmanager.util.ScreenMask
 import io.dreamconnected.coa.lxcmanager.util.ShellCommandExecutor
 import io.github.coap.lxc.LxcManager
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class ContainerOverviewChildFragment : BaseFragment() {
 
-    private val TAG = "ContainerOverviewChildFragment"
+    private val tag = "ContainerOverviewChildFragment"
 
     private var _binding: FragmentContainerOverviewChildBinding? = null
     private val binding get() = _binding!!
@@ -57,9 +56,21 @@ class ContainerOverviewChildFragment : BaseFragment() {
             lxcManager = (requireActivity() as MainActivity).getLxcManager()
             statusMonitor = ContainerStatusMonitor(lxcManager, name)
 
+            // Passive state stream — drives the switch bar. Updates
+            // immediately on RUNNING/STOPPED/FROZEN transitions, independent
+            // of the monitoring interval.
             lifecycleScope.launch {
-                statusMonitor?.statusFlow?.collectLatest { containerStatus ->
-                    updateStatusUI(containerStatus, statusBar, lineChart2)
+                statusMonitor?.stateFlow?.collect { state ->
+                    updateStateBar(state, statusBar)
+                }
+            }
+
+            // Active resource stream — drives the chart at the configured
+            // monitoring interval. Only emits while the container is
+            // RUNNING and monitoring is enabled.
+            lifecycleScope.launch {
+                statusMonitor?.resourceFlow?.collect { (cpu, mem) ->
+                    onNewData(mem, cpu, lineChart2)
                 }
             }
 
@@ -96,15 +107,15 @@ class ContainerOverviewChildFragment : BaseFragment() {
             LxcCpuMemChartManager.initDataStyle(it, lineData)
         }
 
-        if (monitoringEnabled) {
-            statusMonitor?.startMonitoring(intervalMillis)
-        } else {
-            statusMonitor?.stopMonitoring()
-        }
+        // The passive LXC monitor is always active so the switch bar stays in
+        // sync with state changes. CPU/memory polling is gated on the
+        // "Enable monitoring" setting (interval == 0 disables it).
+        val effectiveIntervalMillis = if (monitoringEnabled) intervalMillis else 0L
+        statusMonitor?.startMonitoring(effectiveIntervalMillis)
     }
 
-    private fun updateStatusUI(status: ContainerStatus, statusBar: MaterialSwitch, lineChart2: LineChart) {
-        when (status.status) {
+    private fun updateStateBar(state: String, statusBar: MaterialSwitch) {
+        when (state) {
             "RUNNING" -> {
                 if (!statusBar.isChecked || statusBar.text != getString(R.string.co_container_status_started)) {
                     statusBar.isEnabled = true
@@ -112,7 +123,6 @@ class ContainerOverviewChildFragment : BaseFragment() {
                     statusBar.text = getString(R.string.co_container_status_started)
                 }
                 isFreeze = false
-                onNewData(status.mem, status.cpu, lineChart2)
             }
             "STOPPED" -> {
                 if (statusBar.isChecked || statusBar.text != getString(R.string.co_container_status_stopped)) {
@@ -176,7 +186,7 @@ class ContainerOverviewChildFragment : BaseFragment() {
         containerName?.let { name ->
             val container = lxcManager?.getContainer(name)
             if (container == null) {
-                Log.e(TAG, "Container '$name' not found")
+                Log.e(tag, "Container '$name' not found")
                 screenMask.dismiss()
                 return
             }
@@ -188,10 +198,10 @@ class ContainerOverviewChildFragment : BaseFragment() {
             }
 
             if (success) {
-                Log.d(TAG, "Successfully ${if (isFreeze) "unfreeze" else "freeze"} container '$name'")
+                Log.d(tag, "Successfully ${if (isFreeze) "unfreeze" else "freeze"} container '$name'")
                 Toast.makeText(requireContext(), "Operation successful", Toast.LENGTH_SHORT).show()
             } else {
-                Log.e(TAG, "Failed to ${if (isFreeze) "unfreeze" else "freeze"} container '$name'")
+                Log.e(tag, "Failed to ${if (isFreeze) "unfreeze" else "freeze"} container '$name'")
                 Toast.makeText(requireContext(), "Operation failed", Toast.LENGTH_SHORT).show()
             }
         }
@@ -244,17 +254,17 @@ class ContainerOverviewChildFragment : BaseFragment() {
         containerName?.let { name ->
             val container = lxcManager?.getContainer(name)
             if (container == null) {
-                Log.e(TAG, "Container '$name' not found")
+                Log.e(tag, "Container '$name' not found")
                 Toast.makeText(requireContext(), "Container not found", Toast.LENGTH_SHORT).show()
                 return
             }
 
             val success = container.destroy()
             if (success) {
-                Log.d(TAG, "Successfully destroyed container '$name'")
+                Log.d(tag, "Successfully destroyed container '$name'")
                 Toast.makeText(requireContext(), "Container destroyed", Toast.LENGTH_SHORT).show()
             } else {
-                Log.e(TAG, "Failed to destroy container '$name'")
+                Log.e(tag, "Failed to destroy container '$name'")
                 Toast.makeText(requireContext(), "Failed to destroy container", Toast.LENGTH_SHORT).show()
             }
         }
@@ -265,7 +275,7 @@ class ContainerOverviewChildFragment : BaseFragment() {
         containerName?.let { name ->
             val container = lxcManager?.getContainer(name)
             if (container == null) {
-                Log.e(TAG, "Container '$name' not found")
+                Log.e(tag, "Container '$name' not found")
                 screenMask.dismiss()
                 return@let
             }
@@ -277,10 +287,10 @@ class ContainerOverviewChildFragment : BaseFragment() {
             }
 
             if (success) {
-                Log.d(TAG, "Successfully changed container status for '$name'")
+                Log.d(tag, "Successfully changed container status for '$name'")
                 Toast.makeText(requireContext(), "Status changed", Toast.LENGTH_SHORT).show()
             } else {
-                Log.e(TAG, "Failed to change container status for '$name'")
+                Log.e(tag, "Failed to change container status for '$name'")
                 Toast.makeText(requireContext(), "Failed to change status", Toast.LENGTH_SHORT).show()
             }
         }
