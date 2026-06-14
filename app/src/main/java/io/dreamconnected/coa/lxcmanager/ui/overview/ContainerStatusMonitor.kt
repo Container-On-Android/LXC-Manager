@@ -75,6 +75,12 @@ class ContainerStatusMonitor(
 
         monitorJob = launch {
             while (isActive) {
+                // Spawn lxc-monitord for our lxcpath if it isn't running
+                // yet. lxc_monitor_open connects to monitord's abstract
+                // Unix socket, so it would otherwise fail on a clean boot
+                // until the user runs lxc-monitor CLI by hand.
+                lxcManager?.ensureMonitord()
+
                 val monitor = lxcManager?.openMonitor()
                 if (monitor == null) {
                     Log.w(tag, "lxc_monitor_open returned null; retrying in 1s")
